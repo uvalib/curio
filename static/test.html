@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+
+    <h1>Hello <span id="zzz"></span></h1>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+           var currUrl = window.location.href;
+           var url = new URL(currUrl);
+           var id = url.searchParams.get("id");
+           var ele = $("#zzz");
+           ele.text(id);
+        });
+     </script>
+</body>
