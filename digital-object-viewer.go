@@ -1,17 +1,32 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/viper"
 )
 
 const version = "0.0.1"
+
+var db *sql.DB
+
+type oEmbedData struct {
+	Title  string
+	HTML   string
+	URL    string
+	Width  int
+	Height int
+}
 
 func main() {
 	// Load cfg
@@ -26,11 +41,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Init DB connection
+	log.Printf("Init DB connection to %s...", viper.GetString("db_host"))
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", viper.GetString("db_user"), viper.GetString("db_pass"),
+		viper.GetString("db_host"), viper.GetString("db_name"))
+	db, err = sql.Open("mysql", connectStr)
+	if err != nil {
+		log.Fatal("Database connection failed: %s", err.Error())
+		os.Exit(1)
+	}
+	_, err = db.Query("SELECT 1")
+	if err != nil {
+		log.Fatal("Database query failed: %s", err.Error())
+		os.Exit(1)
+	}
+	defer db.Close()
+	log.Printf("DB Connection established")
+
 	// Set routes and start server
 	mux := httprouter.New()
 	mux.GET("/", loggingHandler(rootHandler))
-	mux.GET("/images/:id", imagesHandler)
-	mux.GET("/oembed/:id", oEmbedHandler)
+	mux.GET("/images/:id", loggingHandler(imagesHandler))
+	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.ServeFiles("/static/*filepath", http.Dir("static/"))
 	log.Printf("Start service on port %s", viper.GetString("port"))
 	http.ListenAndServe(":"+viper.GetString("port"), mux)
@@ -62,15 +94,79 @@ func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
  * Handle a request for oembed data
  */
 func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	fmt.Fprintf(rw, "FAKE OEMBED DATA")
+	urlStr := req.URL.Query().Get("url")
+	if len(urlStr) == 0 {
+		http.Error(rw, "URL is required!", http.StatusBadRequest)
+		return
+	}
+	respFormat := req.URL.Query().Get("format")
+
+	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
+		log.Printf("JSON response requested")
+		renderJSONResponse(urlStr, rw)
+	} else if strings.Compare(respFormat, "xml") == 0 {
+		log.Printf("XML response requested")
+		renderXMLResponse(urlStr, rw)
+	} else {
+		// error: unsupported format
+		err := fmt.Sprintf("Requested format '%s' is invalid.", respFormat)
+		http.Error(rw, err, http.StatusBadRequest)
+	}
+}
+
+func renderJSONResponse(rawURL string, rw http.ResponseWriter) {
+	rw.Header().Set("content-type", "application/json; charset=utf-8")
+
+	// The URL request must be of the expected format: http://[host]/images/[PID]
+	// Extract the PID and generate the JSON data. First, make sure it is valid:
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		msg := fmt.Sprintf("Invalid URL: %s", err.Error())
+		http.Error(rw, msg, http.StatusInternalServerError)
+		return
+	}
+
+	// Now split out relatve path. This should be something like: /images/[PID]
+	relPath := parsedURL.Path
+	bits := strings.Split(relPath, "/")
+	if len(bits) != 3 {
+		msg := fmt.Sprintf("Invalid URL in request: %s", rawURL)
+		http.Error(rw, msg, http.StatusInternalServerError)
+		return
+	}
+	if strings.Compare(bits[1], "images") != 0 {
+		msg := fmt.Sprintf("Invalid resource type in URL: %s", bits[1])
+		http.Error(rw, msg, http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(rw, "This would be JSON data")
+
+	// tmpl := template.Must(template.ParseFiles("response.json"))
+	// err := tmpl.ExecuteTemplate(rw, "iiif.json", data)
+	// if err != nil {
+	// 	logger.Printf("Unable to render IIIF metadata for %s: %s", data.MetadataPID, err.Error())
+	// 	fmt.Fprintf(rw, "Unable to render IIIF metadata: %s", err.Error())
+	// 	return
+	// }
+	// logger.Printf("IIIF Metadata generated for %s", data.MetadataPID)
+}
+
+func renderXMLResponse(url string, rw http.ResponseWriter) {
+	rw.Header().Set("content-type", "text/xml; charset=utf-8")
 }
 
 /**
- * Handle a request for images from a specific ID
+ * Handle a request for images from a specific ID (TrackSys PID)
  */
 func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	// url := fmt.Sprintf("/static/test.html?id=%s", params.ByName("id"))
-	url := "/static/viewer/app.html?manifestUri=http://search.lib.virginia.edu/catalog/tsb:18652/iiif/manifest.json"
-	log.Printf("Redirecting to: %s", url)
-	http.Redirect(rw, req, url, 301)
+	url := fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), params.ByName("id"))
+	log.Printf("Target manifest: %s", url)
+	template, err := template.ParseFiles("templates/view.html")
+	if err != nil {
+		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
+		http.Error(rw, msg, http.StatusInternalServerError)
+	} else {
+		template.Execute(rw, url)
+	}
 }

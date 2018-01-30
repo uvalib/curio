@@ -1,1 +1,6 @@
 port: 8085
+db_user: USER
+db_pass: PASS
+db_name: tracksys3_development
+db_host: localhost:3306
+iiif_manifest_url: https://tracksys.lib.virginia.edu:8080
