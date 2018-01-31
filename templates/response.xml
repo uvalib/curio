@@ -1,0 +1,13 @@
+<oembed>
+   <type>rich</type>
+   <version>1.0</version>
+   <provider_name>UVA Library</provider_name>
+   <provider_url>http://www.library.virginia.edu/</provider_url>
+   <width>{{.Width}}</width>
+   <height>{{.Height}}</height>
+   <title>{{.Title}}</title>
+   <author_name>{{.Author.String}}</author_name>
+   <html>
+      {{.HTML}}
+   </html>
+</oembed>

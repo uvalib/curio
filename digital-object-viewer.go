@@ -110,10 +110,10 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
-		renderJSONResponse(urlStr, rw, req)
+		renderResponse(urlStr, "json", rw, req)
 	} else if strings.Compare(respFormat, "xml") == 0 {
 		log.Printf("XML response requested")
-		renderXMLResponse(urlStr, rw, req)
+		renderResponse(urlStr, "xml", rw, req)
 	} else {
 		// error: unsupported format
 		err := fmt.Sprintf("Requested format '%s' is invalid.", respFormat)
@@ -121,9 +121,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	}
 }
 
-func renderJSONResponse(rawURL string, rw http.ResponseWriter, req *http.Request) {
-	rw.Header().Set("content-type", "application/json; charset=utf-8")
-
+func renderResponse(rawURL string, format string, rw http.ResponseWriter, req *http.Request) {
 	// The URL request must be of the expected format: http://[host]/images/[PID]
 	// Extract the PID and generate the JSON data. First, make sure it is valid:
 	parsedURL, err := url.Parse(rawURL)
@@ -152,6 +150,7 @@ func renderJSONResponse(rawURL string, rw http.ResponseWriter, req *http.Request
 	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), data.PID)
 
 	// FIXME get width & height info! must obey max sent in request
+	// FIXME ofthen width/height is too big. pick some limits for embed like 800x600
 	log.Printf("Retrieving metadata for %s...", data.PID)
 	qs := `select m.title, m.creator_name, min(width), min(height) from metadata m
             inner join master_files f on f.metadata_id = m.id
@@ -179,15 +178,20 @@ func renderJSONResponse(rawURL string, rw http.ResponseWriter, req *http.Request
 		return
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
-	data.HTML = strconv.Quote(rawHTML)
 
-	log.Printf("Rendering JSON output")
-	jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
-	jsonTemplate.Execute(rw, data)
-}
-
-func renderXMLResponse(url string, rw http.ResponseWriter, req *http.Request) {
-	rw.Header().Set("content-type", "text/xml; charset=utf-8")
+	if strings.Compare(format, "json") == 0 {
+		log.Printf("Rendering JSON output")
+		data.HTML = strconv.Quote(rawHTML)
+		rw.Header().Set("content-type", "application/json; charset=utf-8")
+		jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
+		jsonTemplate.Execute(rw, data)
+	} else {
+		rw.Header().Set("content-type", "text/xml; charset=utf-8")
+		log.Printf("Rendering XML output")
+		data.HTML = rawHTML
+		tpl := template.Must(template.ParseFiles("templates/response.xml"))
+		tpl.Execute(rw, data)
+	}
 }
 
 /**
