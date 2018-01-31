@@ -1,11 +1,11 @@
 {
-	"version": "1.0",
-	"type": "rich",
-	"width": {{.Width}},
-	"height": {{.Height}},
-	"title": "{{.Title}}",
-	"url": "{{.URL}}",
-	"provider_name": "UVA Library",
-	"provider_url": "http://www.library.virginia.edu/"
-   "html": "{{.HTML}}"
+   "version": "1.0",
+   "type": "rich",
+   "width": {{.Width}},
+   "height": {{.Height}},
+   "title": "{{.Title}}",
+   "author_name": "{{.Author.String}}",
+   "provider_name": "UVA Library",
+   "provider_url": "http://www.library.virginia.edu/",
+   "html": {{.HTML}}
 }

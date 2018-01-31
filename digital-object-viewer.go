@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
-	"html/template"
+	htemplate "html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -21,11 +24,15 @@ const version = "0.0.1"
 var db *sql.DB
 
 type oEmbedData struct {
-	Title  string
-	HTML   string
-	URL    string
-	Width  int
-	Height int
+	PID       string
+	Title     string
+	Author    sql.NullString
+	HTML      string
+	URL       string
+	Width     int
+	Height    int
+	SourceURI string
+	EmbedHost string
 }
 
 func main() {
@@ -103,10 +110,10 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
-		renderJSONResponse(urlStr, rw)
+		renderJSONResponse(urlStr, rw, req)
 	} else if strings.Compare(respFormat, "xml") == 0 {
 		log.Printf("XML response requested")
-		renderXMLResponse(urlStr, rw)
+		renderXMLResponse(urlStr, rw, req)
 	} else {
 		// error: unsupported format
 		err := fmt.Sprintf("Requested format '%s' is invalid.", respFormat)
@@ -114,7 +121,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	}
 }
 
-func renderJSONResponse(rawURL string, rw http.ResponseWriter) {
+func renderJSONResponse(rawURL string, rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("content-type", "application/json; charset=utf-8")
 
 	// The URL request must be of the expected format: http://[host]/images/[PID]
@@ -139,20 +146,47 @@ func renderJSONResponse(rawURL string, rw http.ResponseWriter) {
 		http.Error(rw, msg, http.StatusInternalServerError)
 		return
 	}
+	var data oEmbedData
+	data.PID = bits[2]
+	data.EmbedHost = req.Host
+	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), data.PID)
 
-	fmt.Fprintf(rw, "This would be JSON data")
+	// FIXME get width & height info! must obey max sent in request
+	log.Printf("Retrieving metadata for %s...", data.PID)
+	qs := `select m.title, m.creator_name, min(width), min(height) from metadata m
+            inner join master_files f on f.metadata_id = m.id
+            inner join image_tech_meta t on t.master_file_id=f.id
+          where m.pid = ? group by m.id`
+	queryErr := db.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author, &data.Width, &data.Height)
+	if queryErr != nil {
+		log.Printf("Request failed: %s", queryErr.Error())
+		if strings.Contains(queryErr.Error(), "no rows") {
+			msg := fmt.Sprintf("Invalid ID %s", data.PID)
+			http.Error(rw, msg, http.StatusBadRequest)
+		} else {
+			msg := fmt.Sprintf("Unable to retreive oEmbed response: %s", queryErr.Error())
+			http.Error(rw, msg, http.StatusInternalServerError)
+		}
+		return
+	}
 
-	// tmpl := template.Must(template.ParseFiles("response.json"))
-	// err := tmpl.ExecuteTemplate(rw, "iiif.json", data)
-	// if err != nil {
-	// 	logger.Printf("Unable to render IIIF metadata for %s: %s", data.MetadataPID, err.Error())
-	// 	fmt.Fprintf(rw, "Unable to render IIIF metadata: %s", err.Error())
-	// 	return
-	// }
-	// logger.Printf("IIIF Metadata generated for %s", data.MetadataPID)
+	log.Printf("Rendering html snippet...")
+	var renderedSnip bytes.Buffer
+	snippet := htemplate.Must(htemplate.ParseFiles("templates/embed.html"))
+	snipErr := snippet.Execute(&renderedSnip, data)
+	if snipErr != nil {
+		http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
+		return
+	}
+	rawHTML := strings.TrimSpace(renderedSnip.String())
+	data.HTML = strconv.Quote(rawHTML)
+
+	log.Printf("Rendering JSON output")
+	jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
+	jsonTemplate.Execute(rw, data)
 }
 
-func renderXMLResponse(url string, rw http.ResponseWriter) {
+func renderXMLResponse(url string, rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("content-type", "text/xml; charset=utf-8")
 }
 
