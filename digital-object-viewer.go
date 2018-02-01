@@ -107,13 +107,21 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 		return
 	}
 	respFormat := req.URL.Query().Get("format")
+	maxWidth, err := strconv.Atoi(req.URL.Query().Get("maxwidth"))
+	if err != nil {
+		maxWidth = 0
+	}
+	maxHeight, err := strconv.Atoi(req.URL.Query().Get("maxheight"))
+	if err != nil {
+		maxHeight = 0
+	}
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
-		renderResponse(urlStr, "json", rw, req)
+		renderResponse(urlStr, "json", maxWidth, maxHeight, rw, req)
 	} else if strings.Compare(respFormat, "xml") == 0 {
 		log.Printf("XML response requested")
-		renderResponse(urlStr, "xml", rw, req)
+		renderResponse(urlStr, "xml", maxWidth, maxHeight, rw, req)
 	} else {
 		// error: unsupported format
 		err := fmt.Sprintf("Requested format '%s' is invalid.", respFormat)
@@ -121,7 +129,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	}
 }
 
-func renderResponse(rawURL string, format string, rw http.ResponseWriter, req *http.Request) {
+func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
 	// The URL request must be of the expected format: http://[host]/images/[PID]
 	// Extract the PID and generate the JSON data. First, make sure it is valid:
 	parsedURL, err := url.Parse(rawURL)
@@ -148,15 +156,18 @@ func renderResponse(rawURL string, format string, rw http.ResponseWriter, req *h
 	data.PID = bits[2]
 	data.EmbedHost = req.Host
 	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), data.PID)
+	data.Width = 800
+	if maxWidth > 0 && maxWidth < data.Width {
+		data.Width = maxWidth
+	}
+	data.Height = 600
+	if maxHeight > 0 && maxHeight < data.Height {
+		data.Height = maxHeight
+	}
 
-	// FIXME get width & height info! must obey max sent in request
-	// FIXME ofthen width/height is too big. pick some limits for embed like 800x600
 	log.Printf("Retrieving metadata for %s...", data.PID)
-	qs := `select m.title, m.creator_name, min(width), min(height) from metadata m
-            inner join master_files f on f.metadata_id = m.id
-            inner join image_tech_meta t on t.master_file_id=f.id
-          where m.pid = ? group by m.id`
-	queryErr := db.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author, &data.Width, &data.Height)
+	qs := `select m.title, m.creator_name from metadata m where m.pid = ? group by m.id`
+	queryErr := db.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author)
 	if queryErr != nil {
 		log.Printf("Request failed: %s", queryErr.Error())
 		if strings.Contains(queryErr.Error(), "no rows") {
@@ -189,8 +200,15 @@ func renderResponse(rawURL string, format string, rw http.ResponseWriter, req *h
 		rw.Header().Set("content-type", "text/xml; charset=utf-8")
 		log.Printf("Rendering XML output")
 		data.HTML = rawHTML
-		tpl := template.Must(template.ParseFiles("templates/response.xml"))
-		tpl.Execute(rw, data)
+		var renderedSnip bytes.Buffer
+		snippet := htemplate.Must(htemplate.ParseFiles("templates/response.xml"))
+		snipErr := snippet.Execute(&renderedSnip, data)
+		if snipErr != nil {
+			log.Printf("Unable to render XML template: %s", snipErr.Error())
+			http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
+		} else {
+			fmt.Fprint(rw, renderedSnip.String())
+		}
 	}
 }
 
