@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	htemplate "html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,7 +20,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-const version = "0.0.1"
+// Version of the service
+const Version = "1.0.0"
 
 var db *sql.DB
 
@@ -54,12 +56,12 @@ func main() {
 		viper.GetString("db_host"), viper.GetString("db_name"))
 	db, err = sql.Open("mysql", connectStr)
 	if err != nil {
-		log.Fatal("Database connection failed: %s", err.Error())
+		log.Printf("FATAL: Database connection failed: %s", err.Error())
 		os.Exit(1)
 	}
 	_, err = db.Query("SELECT 1")
 	if err != nil {
-		log.Fatal("Database query failed: %s", err.Error())
+		log.Printf("FATAL: Database query failed: %s", err.Error())
 		os.Exit(1)
 	}
 	defer db.Close()
@@ -70,6 +72,7 @@ func main() {
 	mux.GET("/", loggingHandler(rootHandler))
 	mux.GET("/images/:id", loggingHandler(imagesHandler))
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
+	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
 	mux.ServeFiles("/static/*filepath", http.Dir("static/"))
 	log.Printf("Start service on port %s", viper.GetString("port"))
 	http.ListenAndServe(":"+viper.GetString("port"), mux)
@@ -94,7 +97,7 @@ func loggingHandler(next httprouter.Handle) httprouter.Handle {
  * Handle a request for / and return version info
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	fmt.Fprintf(rw, "UVA Viewer version %s", version)
+	fmt.Fprintf(rw, "UVA Viewer version %s", Version)
 }
 
 /**
@@ -152,6 +155,10 @@ func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, r
 		http.Error(rw, msg, http.StatusInternalServerError)
 		return
 	}
+	// TODO support other media types like audio or video... or maybe just avalon
+
+	// init the oembed data struct that will be used to render the response
+	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	var data oEmbedData
 	data.PID = bits[2]
 	data.EmbedHost = req.Host
@@ -180,6 +187,7 @@ func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, r
 		return
 	}
 
+	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")
 	var renderedSnip bytes.Buffer
 	snippet := htemplate.Must(htemplate.ParseFiles("templates/embed.html"))
@@ -225,4 +233,36 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	} else {
 		template.Execute(rw, url)
 	}
+}
+
+/**
+ * Check health of service
+ */
+func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Header().Set("Content-Type", "application/json")
+
+	// make sure DB is connected
+	dbStatus := true
+	_, err := db.Query("SELECT 1")
+	if err != nil {
+		dbStatus = false
+	}
+
+	// make sure IIIF manifest service is alive
+	iiifStatus := true
+	resp, err := http.Get(viper.GetString("iiif_manifest_url"))
+	if err != nil {
+		iiifStatus = false
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		iiifStatus = false
+	}
+	if strings.Contains(string(b), "IIIF metadata service") == false {
+		iiifStatus = false
+	}
+
+	fmt.Fprintf(rw, `{"alive": true, "mysql": %t, "iiif": %t}`, dbStatus, iiifStatus)
 }
