@@ -73,7 +73,7 @@ func main() {
 	mux.GET("/images/:id", loggingHandler(imagesHandler))
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
-	mux.ServeFiles("/static/*filepath", http.Dir("static/"))
+	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
 	log.Printf("Start service on port %s", viper.GetString("port"))
 	http.ListenAndServe(":"+viper.GetString("port"), mux)
 }
