@@ -88,7 +88,7 @@ func getConfiguration() {
 	flag.StringVar(&config.dbName, "dbname", os.Getenv("DB_NAME"), "DB Name (required)")
 	flag.StringVar(&config.dbUser, "dbuser", os.Getenv("DB_USER"), "DB User (required)")
 	flag.StringVar(&config.dbPass, "dbpass", os.Getenv("DB_PASS"), "DB Password (required)")
-	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF_URL"), "IIIF URL (required)")
+	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
 	flag.Parse()
 
 	// if anything is still not set, die
@@ -157,10 +157,10 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
-		renderResponse(urlStr, "json", maxWidth, maxHeight, rw, req)
+		renderOembedResponse(urlStr, "json", maxWidth, maxHeight, rw, req)
 	} else if strings.Compare(respFormat, "xml") == 0 {
 		log.Printf("XML response requested")
-		renderResponse(urlStr, "xml", maxWidth, maxHeight, rw, req)
+		renderOembedResponse(urlStr, "xml", maxWidth, maxHeight, rw, req)
 	} else {
 		// error: unsupported format
 		err := fmt.Sprintf("Requested format '%s' is invalid.", respFormat)
@@ -168,7 +168,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	}
 }
 
-func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
+func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
 	// The URL request must be of the expected format: http://[host]/images/[PID]
 	// Extract the PID and generate the JSON data. First, make sure it is valid:
 	parsedURL, err := url.Parse(rawURL)

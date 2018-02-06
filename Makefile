@@ -12,6 +12,8 @@ SRC_TREE=cmd/viewsrv
 
 build: build-darwin build-linux copy-web
 
+all: deps build-darwin build-linux copy-web
+
 build-darwin:
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin $(SRC_TREE)/*
 
@@ -30,6 +32,9 @@ vet:
 clean:
 	$(GOCLEAN)
 	rm -rf bin/
+
+run:
+	go run $(SRC_TREE)/*.go
 
 deps:
 	dep ensure
