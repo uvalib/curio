@@ -83,49 +83,33 @@ func main() {
 
 func getConfiguration() {
 	// FIRST, try command line flags. Fallback is ENV variables
-	flag.IntVar(&config.port, "port", 8085, "Port to offer service on")
-	flag.StringVar(&config.dbHost, "dbhost", "", "DB Host")
-	flag.StringVar(&config.dbName, "dbname", "", "DB Name")
-	flag.StringVar(&config.dbUser, "dbuser", "", "DB User")
-	flag.StringVar(&config.dbPass, "dbpass", "", "DB Password")
-	flag.StringVar(&config.iiifURL, "iiif", "", "IIIF URL")
+	flag.IntVar(&config.port, "port", 8085, "Port to offer service on (default 8085)")
+	flag.StringVar(&config.dbHost, "dbhost", os.Getenv("DB_HOST"), "DB Host (required)")
+	flag.StringVar(&config.dbName, "dbname", os.Getenv("DB_NAME"), "DB Name (required)")
+	flag.StringVar(&config.dbUser, "dbuser", os.Getenv("DB_USER"), "DB User (required)")
+	flag.StringVar(&config.dbPass, "dbpass", os.Getenv("DB_PASS"), "DB Password (required)")
+	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF_URL"), "IIIF URL (required)")
 	flag.Parse()
-
-	if len(config.dbHost) == 0 {
-		config.dbHost = os.Getenv("DB_HOST")
-	}
-	if len(config.dbName) == 0 {
-		config.dbName = os.Getenv("DB_NAME")
-	}
-	if len(config.dbUser) == 0 {
-		config.dbUser = os.Getenv("DB_USER")
-	}
-	if len(config.dbPass) == 0 {
-		config.dbPass = os.Getenv("DB_PASS")
-	}
-	if len(config.iiifURL) == 0 {
-		config.iiifURL = os.Getenv("IIIF_URL")
-	}
 
 	// if anything is still not set, die
 	if len(config.dbHost) == 0 {
-		log.Printf("FATAL: dbhost param or DB_HOST env is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 	if len(config.dbName) == 0 {
-		log.Printf("FATAL: dbname param or DB_NAME env is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 	if len(config.dbUser) == 0 {
-		log.Printf("FATAL: dbuser param or DB_USER env is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 	if len(config.dbPass) == 0 {
-		log.Printf("FATAL: dbpass param or DB_PASS env is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 	if len(config.iiifURL) == 0 {
-		log.Printf("FATAL: iiif param or IIIF_URL env is required")
+		flag.Usage()
 		os.Exit(1)
 	}
 }
