@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"flag"
 	"fmt"
 	htemplate "html/template"
 	"io/ioutil"
@@ -17,13 +18,10 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
-	"github.com/spf13/viper"
 )
 
 // Version of the service
 const Version = "1.0.0"
-
-var db *sql.DB
 
 type oEmbedData struct {
 	PID       string
@@ -37,24 +35,28 @@ type oEmbedData struct {
 	EmbedHost string
 }
 
+type configData struct {
+	port    int
+	dbHost  string
+	dbName  string
+	dbUser  string
+	dbPass  string
+	iiifURL string
+}
+
+// golbals for DB and CFG
+var db *sql.DB
+var config configData
+
 func main() {
 	// Load cfg
 	log.Printf("===> viewer staring up <===")
-	log.Printf("Load configuration...")
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Printf("Unable to read config: %s", err.Error())
-		os.Exit(1)
-	}
+	getConfiguration()
 
 	// Init DB connection
-	log.Printf("Init DB connection to %s...", viper.GetString("db_host"))
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", viper.GetString("db_user"), viper.GetString("db_pass"),
-		viper.GetString("db_host"), viper.GetString("db_name"))
-	db, err = sql.Open("mysql", connectStr)
+	log.Printf("Init DB connection to %s...", config.dbHost)
+	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", config.dbUser, config.dbPass, config.dbHost, config.dbName)
+	db, err := sql.Open("mysql", connectStr)
 	if err != nil {
 		log.Printf("FATAL: Database connection failed: %s", err.Error())
 		os.Exit(1)
@@ -74,8 +76,58 @@ func main() {
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
 	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
-	log.Printf("Start service on port %s", viper.GetString("port"))
-	http.ListenAndServe(":"+viper.GetString("port"), mux)
+	log.Printf("Start service on port %d", config.port)
+	port := fmt.Sprintf(":%d", config.port)
+	http.ListenAndServe(port, mux)
+}
+
+func getConfiguration() {
+	// FIRST, try command line flags. Fallback is ENV variables
+	flag.IntVar(&config.port, "port", 8085, "Port to offer service on")
+	flag.StringVar(&config.dbHost, "dbhost", "", "DB Host")
+	flag.StringVar(&config.dbName, "dbname", "", "DB Name")
+	flag.StringVar(&config.dbUser, "dbuser", "", "DB User")
+	flag.StringVar(&config.dbPass, "dbpass", "", "DB Password")
+	flag.StringVar(&config.iiifURL, "iiif", "", "IIIF URL")
+	flag.Parse()
+
+	if len(config.dbHost) == 0 {
+		config.dbHost = os.Getenv("DB_HOST")
+	}
+	if len(config.dbName) == 0 {
+		config.dbName = os.Getenv("DB_NAME")
+	}
+	if len(config.dbUser) == 0 {
+		config.dbUser = os.Getenv("DB_USER")
+	}
+	if len(config.dbPass) == 0 {
+		config.dbPass = os.Getenv("DB_PASS")
+	}
+	if len(config.iiifURL) == 0 {
+		config.iiifURL = os.Getenv("IIIF_URL")
+	}
+
+	// if anything is still not set, die
+	if len(config.dbHost) == 0 {
+		log.Printf("FATAL: dbhost param or DB_HOST env is required")
+		os.Exit(1)
+	}
+	if len(config.dbName) == 0 {
+		log.Printf("FATAL: dbname param or DB_NAME env is required")
+		os.Exit(1)
+	}
+	if len(config.dbUser) == 0 {
+		log.Printf("FATAL: dbuser param or DB_USER env is required")
+		os.Exit(1)
+	}
+	if len(config.dbPass) == 0 {
+		log.Printf("FATAL: dbpass param or DB_PASS env is required")
+		os.Exit(1)
+	}
+	if len(config.iiifURL) == 0 {
+		log.Printf("FATAL: iiif param or IIIF_URL env is required")
+		os.Exit(1)
+	}
 }
 
 /**
@@ -162,7 +214,7 @@ func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, r
 	var data oEmbedData
 	data.PID = bits[2]
 	data.EmbedHost = req.Host
-	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), data.PID)
+	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
 	data.Width = 800
 	if maxWidth > 0 && maxWidth < data.Width {
 		data.Width = maxWidth
@@ -224,7 +276,7 @@ func renderResponse(rawURL string, format string, maxWidth int, maxHeight int, r
  * Handle a request for images from a specific ID (TrackSys PID)
  */
 func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	url := fmt.Sprintf("%s/%s/manifest.json", viper.GetString("iiif_manifest_url"), params.ByName("id"))
+	url := fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, params.ByName("id"))
 	log.Printf("Target manifest: %s", url)
 	template, err := template.ParseFiles("templates/view.html")
 	if err != nil {
@@ -251,7 +303,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 
 	// make sure IIIF manifest service is alive
 	iiifStatus := true
-	resp, err := http.Get(viper.GetString("iiif_manifest_url"))
+	resp, err := http.Get(config.iiifURL)
 	if err != nil {
 		iiifStatus = false
 	}
