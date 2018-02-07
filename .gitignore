@@ -8,4 +8,4 @@ bin
 # Ignore application configuration
 /config.yml
 dist/
-vendor/
+#vendor/
