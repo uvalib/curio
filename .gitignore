@@ -8,4 +8,8 @@ bin
 # Ignore application configuration
 /config.yml
 dist/
-#vendor/
+.idea
+/src
+/cmd/viewsrv/vendor
+env.*
+/pkg

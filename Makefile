@@ -5,23 +5,28 @@ GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
 GOFMT=$(GOCMD) fmt
 GOGET=$(GOCMD) get
+PWD=$(shell pwd)
+BIN=$(PWD)/bin
+SRC=$(PWD)/src
+VENDOR=$(SRC)/viewsrv/vendor
 
 # project specific definitions
 BASE_NAME=digital-object-viewer
 SRC_TREE=cmd/viewsrv
+RUNNER=scripts/entry.sh
 
 build: build-darwin build-linux copy-web
 
 all: deps build-darwin build-linux copy-web
 
 build-darwin:
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin $(SRC_TREE)/*
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin $(SRC_TREE)/*.go
 
 copy-web:
 	cp -R web/ bin/web/
 
 build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux $(SRC_TREE)/*
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux $(SRC_TREE)/*.go
 
 fmt:
 	$(GOFMT) $(SRC_TREE)/*
@@ -31,10 +36,18 @@ vet:
 
 clean:
 	$(GOCLEAN)
-	rm -rf bin/
+	rm -rf $(BIN)
 
 run:
-	go run $(SRC_TREE)/*.go
+	rm -f $(BIN)/$(BASE_NAME)
+	ln -s $(BIN)/$(BASE_NAME).darwin $(BIN)/$(BASE_NAME)
+	$(RUNNER)
+
+prep:
+	rm -f $(VENDOR)
+	rm -f $(SRC)
+	ln -s $(PWD)/cmd $(SRC)
+	ln -s $(PWD)/vendor $(VENDOR)
 
 deps:
 	dep ensure
