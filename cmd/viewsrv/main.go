@@ -283,6 +283,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	dbStatus := true
 	_, err := mysqlDB.Query("SELECT 1")
 	if err != nil {
+		log.Printf("ERROR: DB access (%s)", err )
 		dbStatus = false
 	}
 
@@ -295,10 +296,12 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	}
 	resp, err := client.Get(config.iiifURL)
 	if err != nil {
+		log.Printf("ERROR: IIIF service (%s)", err )
 		iiifStatus = false
 	} else {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.Printf("ERROR: IIIF service (%s)", err )
 			iiifStatus = false
 		} else {
 			resp.Body.Close()
