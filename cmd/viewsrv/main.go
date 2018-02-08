@@ -45,7 +45,7 @@ type configData struct {
 }
 
 // golbals for DB and CFG
-var db *sql.DB
+var mysqlDB *sql.DB
 var config configData
 
 func main() {
@@ -54,19 +54,20 @@ func main() {
 	getConfiguration()
 
 	// Init DB connection
+	var err error
 	log.Printf("Init DB connection to %s...", config.dbHost)
 	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", config.dbUser, config.dbPass, config.dbHost, config.dbName)
-	db, err := sql.Open("mysql", connectStr)
+	mysqlDB, err = sql.Open("mysql", connectStr)
 	if err != nil {
 		log.Printf("FATAL: Database connection failed: %s", err.Error())
 		os.Exit(1)
 	}
-	_, err = db.Query("SELECT 1")
+	_, err = mysqlDB.Query("SELECT 1")
 	if err != nil {
 		log.Printf("FATAL: Database query failed: %s", err.Error())
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer mysqlDB.Close()
 	log.Printf("DB Connection established")
 
 	// Set routes and start server
@@ -210,7 +211,7 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 
 	log.Printf("Retrieving metadata for %s...", data.PID)
 	qs := `select m.title, m.creator_name from metadata m where m.pid = ? group by m.id`
-	queryErr := db.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author)
+	queryErr := mysqlDB.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author)
 	if queryErr != nil {
 		log.Printf("Request failed: %s", queryErr.Error())
 		if strings.Contains(queryErr.Error(), "no rows") {
@@ -280,7 +281,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 
 	// make sure DB is connected
 	dbStatus := true
-	_, err := db.Query("SELECT 1")
+	_, err := mysqlDB.Query("SELECT 1")
 	if err != nil {
 		dbStatus = false
 	}

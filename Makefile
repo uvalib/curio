@@ -24,6 +24,7 @@ build-darwin:
 
 copy-web:
 	cp -R web/ bin/web/
+	cp -R templates bin/templates/
 
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux $(SRC_TREE)/*.go
