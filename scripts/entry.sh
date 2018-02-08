@@ -30,7 +30,8 @@ if [ -n "$IIIF_URL" ]; then
    IIFURL_OPT="--iiif $IIIF_URL"
 fi
 
-bin/digital-object-viewer $DBHOST_OPT $DBNAME_OPT $DBUSER_OPT $DBPASSWD_OPT $IIFURL_OPT
+cd bin
+./digital-object-viewer $DBHOST_OPT $DBNAME_OPT $DBUSER_OPT $DBPASSWD_OPT $IIFURL_OPT
 
 #
 # end of file
