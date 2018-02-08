@@ -29,6 +29,7 @@ CMD scripts/entry.sh
 COPY data/container_bash_profile /home/webservice/.profile
 COPY scripts/entry.sh $APP_HOME/scripts/entry.sh
 COPY web $APP_HOME/bin/web
+COPY templates $APP_HOME/bin/templates
 COPY bin/digital-object-viewer.linux $APP_HOME/bin/digital-object-viewer
 
 # Add the build tag
