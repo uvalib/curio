@@ -291,14 +291,16 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	resp, err := http.Get(config.iiifURL)
 	if err != nil {
 		iiifStatus = false
-	}
-	b, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		iiifStatus = false
-	}
-	if strings.Contains(string(b), "IIIF metadata service") == false {
-		iiifStatus = false
+	} else {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			iiifStatus = false
+		} else {
+			defer resp.Body.Close()
+			if strings.Contains(string(b), "IIIF metadata service") == false {
+				iiifStatus = false
+			}
+		}
 	}
 
 	fmt.Fprintf(rw, `{"alive": true, "mysql": %t, "iiif": %t}`, dbStatus, iiifStatus)
