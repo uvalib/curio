@@ -276,10 +276,10 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
  * Check health of service
  */
 func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	rw.WriteHeader(http.StatusOK)
 	rw.Header().Set("Content-Type", "application/json")
 
 	// make sure DB is connected
+	log.Printf("Checking DB...")
 	dbStatus := true
 	_, err := mysqlDB.Query("SELECT 1")
 	if err != nil {
@@ -287,8 +287,13 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	}
 
 	// make sure IIIF manifest service is alive
+	log.Printf("Checking IIIF...")
 	iiifStatus := true
-	resp, err := http.Get(config.iiifURL)
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Get(config.iiifURL)
 	if err != nil {
 		iiifStatus = false
 	} else {
@@ -296,12 +301,16 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 		if err != nil {
 			iiifStatus = false
 		} else {
-			defer resp.Body.Close()
+			resp.Body.Close()
 			if strings.Contains(string(b), "IIIF metadata service") == false {
 				iiifStatus = false
 			}
 		}
 	}
-
-	fmt.Fprintf(rw, `{"alive": true, "mysql": %t, "iiif": %t}`, dbStatus, iiifStatus)
+	out := fmt.Sprintf(`{"alive": true, "mysql": %t, "iiif": %t}`, dbStatus, iiifStatus)
+	if dbStatus == false || iiifStatus == false {
+		http.Error(rw, out, http.StatusInternalServerError)
+	} else {
+		fmt.Fprintf(rw, out)
+	}
 }
