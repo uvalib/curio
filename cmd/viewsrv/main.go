@@ -44,6 +44,11 @@ type configData struct {
 	iiifURL string
 }
 
+type viewerData struct {
+	URI       string
+	StartPage int
+}
+
 // golbals for DB and CFG
 var mysqlDB *sql.DB
 var config configData
@@ -261,14 +266,20 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
  * Handle a request for images from a specific ID (TrackSys PID)
  */
 func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	url := fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, params.ByName("id"))
-	log.Printf("Target manifest: %s", url)
+	var data viewerData
+	page, err := strconv.Atoi(req.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+	data.StartPage = page - 1
+	data.URI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, params.ByName("id"))
+	log.Printf("Target manifest: %s", data.URI)
 	template, err := template.ParseFiles("templates/view.html")
 	if err != nil {
 		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
 		http.Error(rw, msg, http.StatusInternalServerError)
 	} else {
-		template.Execute(rw, url)
+		template.Execute(rw, data)
 	}
 }
 
@@ -283,7 +294,7 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	dbStatus := true
 	_, err := mysqlDB.Query("SELECT 1")
 	if err != nil {
-		log.Printf("ERROR: DB access (%s)", err )
+		log.Printf("ERROR: DB access (%s)", err)
 		dbStatus = false
 	}
 
@@ -296,12 +307,12 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 	}
 	resp, err := client.Get(config.iiifURL)
 	if err != nil {
-		log.Printf("ERROR: IIIF service (%s)", err )
+		log.Printf("ERROR: IIIF service (%s)", err)
 		iiifStatus = false
 	} else {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Printf("ERROR: IIIF service (%s)", err )
+			log.Printf("ERROR: IIIF service (%s)", err)
 			iiifStatus = false
 		} else {
 			resp.Body.Close()
