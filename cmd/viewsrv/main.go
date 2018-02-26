@@ -18,6 +18,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 )
 
 // Version of the service
@@ -33,6 +34,7 @@ type oEmbedData struct {
 	Height    int
 	SourceURI string
 	EmbedHost string
+	StartPage int
 }
 
 type configData struct {
@@ -84,7 +86,7 @@ func main() {
 	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
 	log.Printf("Start service on port %d", config.port)
 	port := fmt.Sprintf(":%d", config.port)
-	http.ListenAndServe(port, mux)
+	http.ListenAndServe(port, cors.Default().Handler(mux))
 }
 
 func getConfiguration() {
@@ -146,11 +148,7 @@ func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
  * Handle a request for oembed data
  */
 func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	urlStr := req.URL.Query().Get("url")
-	if len(urlStr) == 0 {
-		http.Error(rw, "URL is required!", http.StatusBadRequest)
-		return
-	}
+	// Get some optional params; format, maxWidth and maxHeight
 	respFormat := req.URL.Query().Get("format")
 	maxWidth, err := strconv.Atoi(req.URL.Query().Get("maxwidth"))
 	if err != nil {
@@ -160,6 +158,14 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	if err != nil {
 		maxHeight = 0
 	}
+
+	// Next, get the required URL and see if a page is requested
+	urlStr, _ := url.QueryUnescape(req.URL.Query().Get("url"))
+	if len(urlStr) == 0 {
+		http.Error(rw, "URL is required!", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Got URL: %s", urlStr)
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
@@ -184,6 +190,14 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		return
 	}
 
+	// get page param if any
+	var data oEmbedData
+	qp, _ := url.ParseQuery(parsedURL.RawQuery)
+	data.StartPage = 0
+	if len(qp["page"]) > 0 {
+		data.StartPage, _ = strconv.Atoi(qp["page"][0])
+	}
+
 	// Now split out relatve path. This should be something like: /images/[PID]
 	relPath := parsedURL.Path
 	bits := strings.Split(relPath, "/")
@@ -201,7 +215,6 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 
 	// init the oembed data struct that will be used to render the response
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
-	var data oEmbedData
 	data.PID = bits[2]
 	data.EmbedHost = req.Host
 	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
