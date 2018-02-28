@@ -84,7 +84,7 @@ func main() {
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
 	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
-	log.Printf("Start service on port %d", config.port)
+	log.Printf("Start service on port %d with CORS support enabled", config.port)
 	port := fmt.Sprintf(":%d", config.port)
 	http.ListenAndServe(port, cors.Default().Handler(mux))
 }
@@ -196,6 +196,12 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	data.StartPage = 0
 	if len(qp["page"]) > 0 {
 		data.StartPage, _ = strconv.Atoi(qp["page"][0])
+	}
+
+	// accept 1 based page numbers from client, but use
+	// 0-based canvas index in UV embed snippet
+	if data.StartPage > 0 {
+		data.StartPage--
 	}
 
 	// Now split out relatve path. This should be something like: /images/[PID]
