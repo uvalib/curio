@@ -189,8 +189,10 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 }
 
 func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
-	// The URL request must be of the expected format: http://[host]/images/[PID]
-	// Extract the PID and generate the JSON data. First, make sure it is valid:
+	// init data used to render the oEmbed response
+	var data oEmbedData
+
+	// The raw URL requested must be of the expected format: [http|https]://[host]/images/[PID][?page=n]
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		msg := fmt.Sprintf("Invalid URL: %s", err.Error())
@@ -198,8 +200,7 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		return
 	}
 
-	// get page param if any
-	var data oEmbedData
+	// Get page param if any...
 	qp, _ := url.ParseQuery(parsedURL.RawQuery)
 	data.StartPage = 0
 	if len(qp["page"]) > 0 {
@@ -212,7 +213,7 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		data.StartPage--
 	}
 
-	// Now split out relatve path. This should be something like: /images/[PID]
+	// Now split out relatve path to find PID. This should be something like: /images/[PID]
 	relPath := parsedURL.Path
 	bits := strings.Split(relPath, "/")
 	if len(bits) != 3 {
@@ -225,20 +226,19 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		http.Error(rw, msg, http.StatusInternalServerError)
 		return
 	}
-	// TODO support other media types like audio or video... or maybe just avalon
-
-	// init the oembed data struct that will be used to render the response
-	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	data.PID = bits[2]
+
+	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
 	data.Scheme = "http"
-	if req.TLS != nil {
+	if strings.Contains(data.SourceURI, "https") {
 		data.Scheme = "https"
 	}
 	data.EmbedHost = config.dovHost
 	if len(data.EmbedHost) == 0 {
 		data.EmbedHost = req.Host
 	}
-	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
+
+	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	data.Width = 800
 	if maxWidth > 0 && maxWidth < data.Width {
 		data.Width = maxWidth
