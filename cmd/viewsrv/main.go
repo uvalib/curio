@@ -33,6 +33,7 @@ type oEmbedData struct {
 	Width     int
 	Height    int
 	SourceURI string
+	Scheme    string
 	EmbedHost string
 	StartPage int
 }
@@ -149,7 +150,6 @@ func loggingHandler(next httprouter.Handle) httprouter.Handle {
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	fmt.Fprintf(rw, "UVA Viewer version %s", Version)
-	log.Printf("URL %s:", req.URL.RequestURI())
 }
 
 /**
@@ -173,7 +173,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 		http.Error(rw, "URL is required!", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Got URL: %s", urlStr)
+	log.Printf("Target URL: %s", urlStr)
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
@@ -230,6 +230,10 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	// init the oembed data struct that will be used to render the response
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	data.PID = bits[2]
+	data.Scheme = "http"
+	if req.TLS != nil {
+		data.Scheme = "https"
+	}
 	data.EmbedHost = config.dovHost
 	if len(data.EmbedHost) == 0 {
 		data.EmbedHost = req.Host
