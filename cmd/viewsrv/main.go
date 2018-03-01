@@ -234,7 +234,7 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	if len(data.EmbedHost) == 0 {
 		data.EmbedHost = req.Host
 	}
-	data.SourceURI = fmt.Sprintf("%s/%s.manifest.json", config.iiifURL, data.PID)
+	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
 	data.Width = 800
 	if maxWidth > 0 && maxWidth < data.Width {
 		data.Width = maxWidth
