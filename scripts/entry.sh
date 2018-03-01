@@ -3,7 +3,8 @@ DBHOST_OPT=""
 DBNAME_OPT=""
 DBUSER_OPT=""
 DBPASSWD_OPT=""
-IIFURL_OPT=""
+IIIFURL_OPT=""
+DOVHOST_OPT=""
 
 # database host
 if [ -n "$DBHOST" ]; then
@@ -27,11 +28,16 @@ fi
 
 # IIIF URL
 if [ -n "$IIIF_URL" ]; then
-   IIFURL_OPT="--iiif $IIIF_URL"
+   IIIFURL_OPT="--iiif $IIIF_URL"
+fi
+
+# DOV HOST
+if [ -n "$DOVHOST" ]; then
+   DOVHOST_OPT="--dovhost $DOVHOST"
 fi
 
 cd bin
-./digital-object-viewer $DBHOST_OPT $DBNAME_OPT $DBUSER_OPT $DBPASSWD_OPT $IIFURL_OPT
+./digital-object-viewer $DBHOST_OPT $DBNAME_OPT $DBUSER_OPT $DBPASSWD_OPT $IIIFURL_OPT $DOVHOST_OPT
 
 #
 # end of file

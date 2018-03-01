@@ -44,6 +44,7 @@ type configData struct {
 	dbUser  string
 	dbPass  string
 	iiifURL string
+	dovHost string
 }
 
 type viewerData struct {
@@ -97,6 +98,7 @@ func getConfiguration() {
 	flag.StringVar(&config.dbUser, "dbuser", os.Getenv("DB_USER"), "DB User (required)")
 	flag.StringVar(&config.dbPass, "dbpass", os.Getenv("DB_PASS"), "DB Password (required)")
 	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
+	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
 	flag.Parse()
 
 	// if anything is still not set, die
@@ -120,6 +122,11 @@ func getConfiguration() {
 		flag.Usage()
 		os.Exit(1)
 	}
+	if len(config.dovHost) == 0 {
+		log.Printf("DOV host not set; this info will be extracted from request headers")
+	} else {
+		log.Printf("DOV host set to: %s", config.dovHost)
+	}
 }
 
 /**
@@ -142,6 +149,7 @@ func loggingHandler(next httprouter.Handle) httprouter.Handle {
  */
 func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	fmt.Fprintf(rw, "UVA Viewer version %s", Version)
+	log.Printf("URL %s:", req.URL.RequestURI())
 }
 
 /**
@@ -222,7 +230,10 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	// init the oembed data struct that will be used to render the response
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	data.PID = bits[2]
-	data.EmbedHost = req.Host
+	data.EmbedHost = config.dovHost
+	if len(data.EmbedHost) == 0 {
+		data.EmbedHost = req.Host
+	}
 	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
 	data.Width = 800
 	if maxWidth > 0 && maxWidth < data.Width {
