@@ -173,7 +173,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 		http.Error(rw, "URL is required!", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Target URL: %s", urlStr)
+	log.Printf("Target resource URL: %s", urlStr)
 
 	if len(respFormat) == 0 || strings.Compare(respFormat, "json") == 0 {
 		log.Printf("JSON response requested")
@@ -211,9 +211,11 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	// 0-based canvas index in UV embed snippet
 	if data.StartPage > 0 {
 		data.StartPage--
+		log.Printf("Requested starting page index %d", data.StartPage)
 	}
 
 	// Now split out relatve path to find PID. This should be something like: /images/[PID]
+	// NOTE: that this wil strip out all query params
 	relPath := parsedURL.Path
 	bits := strings.Split(relPath, "/")
 	if len(bits) != 3 {
@@ -226,9 +228,19 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		http.Error(rw, msg, http.StatusInternalServerError)
 		return
 	}
-	data.PID = bits[2]
 
-	data.SourceURI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, data.PID)
+	// URL for IIIF manifest
+	data.PID = bits[2]
+	data.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, data.PID)
+
+	// Validate that the manifest has images
+	if isManifestViewable(data.SourceURI) == false {
+		log.Printf("Requested URL %s has no visible images", data.SourceURI)
+		http.Error(rw, "Sorry, the requested resource is not available.", http.StatusNotFound)
+		return
+	}
+
+	// scheme / host for UV javascript
 	data.Scheme = "http"
 	if strings.Contains(data.SourceURI, "https") {
 		data.Scheme = "https"
@@ -297,17 +309,28 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 }
 
 /**
- * Handle a request for images from a specific ID (TrackSys PID)
+ * Handle a request for images from a specific ID (TrackSys PID) and page offset (optional)
  */
 func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	var data viewerData
+	// pull page QP and use it for starting page. Any other params are ignored.
 	page, err := strconv.Atoi(req.URL.Query().Get("page"))
 	if err != nil {
 		page = 1
 	}
+
+	var data viewerData
 	data.StartPage = page - 1
-	data.URI = fmt.Sprintf("%s/%s/manifest.json", config.iiifURL, params.ByName("id"))
-	log.Printf("Target manifest: %s", data.URI)
+	data.URI = fmt.Sprintf("%s/%s", config.iiifURL, params.ByName("id"))
+
+	// Make sure there are images visable for this PID.
+	// Ahow an error page and bail if not
+	if isManifestViewable(data.URI) == false {
+		rw.WriteHeader(http.StatusNotFound)
+		bytes, _ := ioutil.ReadFile("web/not_available.html")
+		fmt.Fprintf(rw, "%s", string(bytes))
+		return
+	}
+
 	template, err := template.ParseFiles("templates/view.html")
 	if err != nil {
 		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
@@ -315,6 +338,30 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	} else {
 		template.Execute(rw, data)
 	}
+}
+
+// Hit the target IIIF manifest URL and see if it contains any images
+//
+func isManifestViewable(url string) bool {
+	timeout := time.Duration(15 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	log.Printf("Checking manifest URL %s for images", url)
+	resp, err := client.Get(url)
+	if err != nil {
+		log.Printf("ERROR: IIIF URL: %s failed to return a response", url)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("ERROR: IIIF URL: %s returned non-success status: %d", url, resp.StatusCode)
+		return false
+	}
+	bytes, _ := ioutil.ReadAll(resp.Body)
+	respStr := string(bytes)
+
+	return strings.Contains(respStr, "dcTypes:Image")
 }
 
 /**
