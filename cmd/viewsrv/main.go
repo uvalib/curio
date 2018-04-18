@@ -22,7 +22,7 @@ import (
 )
 
 // Version of the service
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 type oEmbedData struct {
 	PID       string
@@ -260,9 +260,27 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		data.Height = maxHeight
 	}
 
-	log.Printf("Retrieving metadata for %s...", data.PID)
+	pidType := determinePidType(data.PID)
+	var tgtPID string
+	if pidType == "component" {
+		log.Printf("Retrieving component metadata for %s...", data.PID)
+		tgtPID = getComponentMetadataPID(data.PID)
+		if len(tgtPID) == 0 {
+			msg := fmt.Sprintf("Invalid component ID %s", data.PID)
+			http.Error(rw, msg, http.StatusBadRequest)
+			return
+		}
+	} else if pidType == "metadata" {
+		log.Printf("Retrieving metadata for %s...", data.PID)
+		tgtPID = data.PID
+	} else {
+		msg := fmt.Sprintf("Invalid ID %s", data.PID)
+		http.Error(rw, msg, http.StatusBadRequest)
+		return
+	}
+
 	qs := `select m.title, m.creator_name from metadata m where m.pid = ? group by m.id`
-	queryErr := mysqlDB.QueryRow(qs, data.PID).Scan(&data.Title, &data.Author)
+	queryErr := mysqlDB.QueryRow(qs, tgtPID).Scan(&data.Title, &data.Author)
 	if queryErr != nil {
 		log.Printf("Request failed: %s", queryErr.Error())
 		if strings.Contains(queryErr.Error(), "no rows") {
@@ -306,6 +324,42 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 			fmt.Fprint(rw, renderedSnip.String())
 		}
 	}
+}
+
+func getComponentMetadataPID(componentPID string) (pidType string) {
+	var pid string
+	qs := `select distinct m.pid from master_files f
+      inner join metadata m on m.id = f.metadata_id
+      inner join components c on c.id = f.component_id
+      where c.pid = ? limit 1`
+	queryErr := mysqlDB.QueryRow(qs, componentPID).Scan(&pid)
+	if queryErr != nil {
+		log.Printf("Unable get metadata PID: %s", queryErr.Error())
+		return ""
+	}
+	return pid
+}
+
+/**
+ * See if a PID is for a metadata record, component or not known
+ */
+func determinePidType(pid string) (pidType string) {
+	var cnt int
+	pidType = "invalid"
+	qs := "select count(*) as cnt from metadata b where pid=?"
+	mysqlDB.QueryRow(qs, pid).Scan(&cnt)
+	if cnt == 1 {
+		pidType = "metadata"
+		return
+	}
+
+	qs = "select count(*) as cnt from components b where pid=?"
+	mysqlDB.QueryRow(qs, pid).Scan(&cnt)
+	if cnt == 1 {
+		pidType = "component"
+		return
+	}
+	return
 }
 
 /**
