@@ -4,7 +4,9 @@
    "width": {{.Width}},
    "height": {{.Height}},
    "title": "{{.Title}}",
-   "author_name": "{{.Author.String}}",
+   {{- if .Author}}
+   "author_name": "{{.Author}}",
+    {{- end}}
    "provider_name": "UVA Library",
    "provider_url": "http://www.library.virginia.edu/",
    "html": {{.HTML}}

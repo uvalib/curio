@@ -2,7 +2,8 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	htemplate "html/template"
@@ -22,12 +23,12 @@ import (
 )
 
 // Version of the service
-const Version = "1.1.0"
+const Version = "1.2.0"
 
 type oEmbedData struct {
 	PID       string
 	Title     string
-	Author    sql.NullString
+	Author    string
 	HTML      string
 	URL       string
 	Width     int
@@ -39,13 +40,10 @@ type oEmbedData struct {
 }
 
 type configData struct {
-	port    int
-	dbHost  string
-	dbName  string
-	dbUser  string
-	dbPass  string
-	iiifURL string
-	dovHost string
+	port        int
+	tracksysURL string
+	iiifURL     string
+	dovHost     string
 }
 
 type viewerData struct {
@@ -54,30 +52,12 @@ type viewerData struct {
 }
 
 // golbals for DB and CFG
-var mysqlDB *sql.DB
 var config configData
 
 func main() {
 	// Load cfg
 	log.Printf("===> viewer staring up <===")
 	getConfiguration()
-
-	// Init DB connection
-	var err error
-	log.Printf("Init DB connection to %s...", config.dbHost)
-	connectStr := fmt.Sprintf("%s:%s@tcp(%s)/%s", config.dbUser, config.dbPass, config.dbHost, config.dbName)
-	mysqlDB, err = sql.Open("mysql", connectStr)
-	if err != nil {
-		log.Printf("FATAL: Database connection failed: %s", err.Error())
-		os.Exit(1)
-	}
-	_, err = mysqlDB.Query("SELECT 1")
-	if err != nil {
-		log.Printf("FATAL: Database query failed: %s", err.Error())
-		os.Exit(1)
-	}
-	defer mysqlDB.Close()
-	log.Printf("DB Connection established")
 
 	// Set routes and start server
 	mux := httprouter.New()
@@ -94,32 +74,13 @@ func main() {
 func getConfiguration() {
 	// FIRST, try command line flags. Fallback is ENV variables
 	flag.IntVar(&config.port, "port", 8085, "Port to offer service on (default 8085)")
-	flag.StringVar(&config.dbHost, "dbhost", os.Getenv("DB_HOST"), "DB Host (required)")
-	flag.StringVar(&config.dbName, "dbname", os.Getenv("DB_NAME"), "DB Name (required)")
-	flag.StringVar(&config.dbUser, "dbuser", os.Getenv("DB_USER"), "DB User (required)")
-	flag.StringVar(&config.dbPass, "dbpass", os.Getenv("DB_PASS"), "DB Password (required)")
+	flag.StringVar(&config.tracksysURL, "tracksys", os.Getenv("TRACKSYS_URL"), "TrackSys URL (required)")
 	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
 	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
 	flag.Parse()
 
 	// if anything is still not set, die
-	if len(config.dbHost) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if len(config.dbName) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if len(config.dbUser) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if len(config.dbPass) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if len(config.iiifURL) == 0 {
+	if config.tracksysURL == "" || config.iiifURL == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -260,38 +221,16 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		data.Height = maxHeight
 	}
 
-	pidType := determinePidType(data.PID)
-	var tgtPID string
-	if pidType == "component" {
-		log.Printf("Retrieving component metadata for %s...", data.PID)
-		tgtPID = getComponentMetadataPID(data.PID)
-		if len(tgtPID) == 0 {
-			msg := fmt.Sprintf("Invalid component ID %s", data.PID)
-			http.Error(rw, msg, http.StatusBadRequest)
-			return
-		}
-	} else if pidType == "metadata" {
-		log.Printf("Retrieving metadata for %s...", data.PID)
-		tgtPID = data.PID
-	} else {
-		msg := fmt.Sprintf("Invalid ID %s", data.PID)
-		http.Error(rw, msg, http.StatusBadRequest)
+	// Hit Tracksys API to get brief metadata
+	pidURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, data.PID)
+	jsonResp, err := getAPIResponse(pidURL)
+	if err != nil {
+		rw.WriteHeader(http.StatusServiceUnavailable)
+		fmt.Fprintf(rw, "Unable to connect with TrackSys to describe pid %s", data.PID)
 		return
 	}
 
-	qs := `select m.title, m.creator_name from metadata m where m.pid = ? group by m.id`
-	queryErr := mysqlDB.QueryRow(qs, tgtPID).Scan(&data.Title, &data.Author)
-	if queryErr != nil {
-		log.Printf("Request failed: %s", queryErr.Error())
-		if strings.Contains(queryErr.Error(), "no rows") {
-			msg := fmt.Sprintf("Invalid ID %s", data.PID)
-			http.Error(rw, msg, http.StatusBadRequest)
-		} else {
-			msg := fmt.Sprintf("Unable to retreive oEmbed response: %s", queryErr.Error())
-			http.Error(rw, msg, http.StatusInternalServerError)
-		}
-		return
-	}
+	parseJSONResponse(jsonResp, &data)
 
 	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")
@@ -326,45 +265,32 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	}
 }
 
-func getComponentMetadataPID(componentPID string) (pidType string) {
-	var pid string
-	qs := `select distinct m.pid from master_files f
-      inner join metadata m on m.id = f.metadata_id
-      inner join components c on c.id = f.component_id
-      where c.pid = ? limit 1`
-	queryErr := mysqlDB.QueryRow(qs, componentPID).Scan(&pid)
-	if queryErr != nil {
-		log.Printf("Unable get metadata PID: %s", queryErr.Error())
-		return ""
+func getAPIResponse(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
 	}
-	return pid
+	defer resp.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	respString := string(bodyBytes)
+	if resp.StatusCode != 200 {
+		return "", errors.New(respString)
+	}
+	return respString, nil
 }
 
-/**
- * See if a PID is for a metadata record, component or not known
- */
-func determinePidType(pid string) (pidType string) {
-	var cnt int
-	pidType = "invalid"
-	qs := "select count(*) as cnt from metadata b where pid=?"
-	mysqlDB.QueryRow(qs, pid).Scan(&cnt)
-	if cnt == 1 {
-		pidType = "metadata"
-		return
+func parseJSONResponse(jsonStr string, data *oEmbedData) {
+	var jsonMap map[string]interface{}
+	json.Unmarshal([]byte(jsonStr), &jsonMap)
+	data.Title = jsonMap["title"].(string)
+	out, ok := jsonMap["creator"].(string)
+	if ok {
+		log.Printf("Got author [%s]", out)
+		data.Author = out
 	}
-
-	qs = "select count(*) as cnt from components b where pid=?"
-	mysqlDB.QueryRow(qs, pid).Scan(&cnt)
-	if cnt == 1 {
-		pidType = "component"
-		return
-	}
-	return
 }
 
-/**
- * Handle a request for images from a specific ID (TrackSys PID) and page offset (optional)
- */
+// Handle a request for images from a specific image PID and page offset (optional).
 func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	// pull page QP and use it for starting page. Any other params are ignored.
 	page, err := strconv.Atoi(req.URL.Query().Get("page"))
@@ -395,9 +321,8 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 }
 
 // Hit the target IIIF manifest URL and see if it contains any images
-//
 func isManifestViewable(url string) bool {
-	timeout := time.Duration(15 * time.Second)
+	timeout := time.Duration(10 * time.Second)
 	client := http.Client{
 		Timeout: timeout,
 	}
@@ -418,29 +343,41 @@ func isManifestViewable(url string) bool {
 	return strings.Contains(respStr, "dcTypes:Image")
 }
 
-/**
- * Check health of service
- */
+// Check health of service
 func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	// make sure DB is connected
-	log.Printf("Checking DB...")
-	dbStatus := true
-	_, err := mysqlDB.Query("SELECT 1")
+	// TCheck TrackSys
+	log.Printf("Checking Tracksys...")
+	tsStatus := true
+	timeout := time.Duration(5 * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	url := fmt.Sprintf("%s/pid/uva-lib:1157560/type", config.tracksysURL)
+	log.Printf("Tracksys test URL: %s", url)
+	resp, err := client.Get(url)
 	if err != nil {
-		log.Printf("ERROR: DB access (%s)", err)
-		dbStatus = false
+		log.Printf("ERROR: TrackSys service (%s)", err)
+		tsStatus = false
+	} else {
+		b, errRead := ioutil.ReadAll(resp.Body)
+		if errRead != nil {
+			log.Printf("ERROR: TrackSys service (%s)", errRead)
+			tsStatus = false
+		} else {
+			resp.Body.Close()
+			if string(b) != "sirsi_metadata" {
+				log.Printf("ERROR: TrackSys bad response (%s)", b)
+				tsStatus = false
+			}
+		}
 	}
 
 	// make sure IIIF manifest service is alive
 	log.Printf("Checking IIIF...")
 	iiifStatus := true
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-	resp, err := client.Get(config.iiifURL)
+	resp, err = client.Get(config.iiifURL)
 	if err != nil {
 		log.Printf("ERROR: IIIF service (%s)", err)
 		iiifStatus = false
@@ -456,8 +393,8 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 			}
 		}
 	}
-	out := fmt.Sprintf(`{"alive": true, "mysql": %t, "iiif": %t}`, dbStatus, iiifStatus)
-	if dbStatus == false || iiifStatus == false {
+	out := fmt.Sprintf(`{"alive": true, "iiif": %t, "tracksys": %t}`, iiifStatus, tsStatus)
+	if iiifStatus == false {
 		http.Error(rw, out, http.StatusInternalServerError)
 	} else {
 		fmt.Fprintf(rw, out)
