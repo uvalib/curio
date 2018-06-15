@@ -17,7 +17,6 @@ import (
 	"text/template"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 )
