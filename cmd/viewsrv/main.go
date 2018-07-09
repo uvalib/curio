@@ -2,12 +2,9 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	htemplate "html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,10 +16,11 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
+	"github.com/uvalib/digital-object-viewer/internal/apisvc"
 )
 
 // Version of the service
-const Version = "1.2.0"
+const Version = "1.3.0"
 
 type oEmbedData struct {
 	PID       string
@@ -41,13 +39,9 @@ type oEmbedData struct {
 type configData struct {
 	port        int
 	tracksysURL string
+	apolloURL   string
 	iiifURL     string
 	dovHost     string
-}
-
-type viewerData struct {
-	URI       string
-	StartPage int
 }
 
 // golbals for DB and CFG
@@ -62,6 +56,7 @@ func main() {
 	mux := httprouter.New()
 	mux.GET("/", loggingHandler(rootHandler))
 	mux.GET("/images/:id", loggingHandler(imagesHandler))
+	mux.GET("/wsls/:id", loggingHandler(wslsHandler))
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
 	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
@@ -74,12 +69,13 @@ func getConfiguration() {
 	// FIRST, try command line flags. Fallback is ENV variables
 	flag.IntVar(&config.port, "port", 8085, "Port to offer service on (default 8085)")
 	flag.StringVar(&config.tracksysURL, "tracksys", os.Getenv("TRACKSYS_URL"), "TrackSys URL (required)")
+	flag.StringVar(&config.apolloURL, "apollo", os.Getenv("APOLLO_URL"), "Apollo URL (required)")
 	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
 	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
 	flag.Parse()
 
 	// if anything is still not set, die
-	if config.tracksysURL == "" || config.iiifURL == "" {
+	if config.tracksysURL == "" || config.iiifURL == "" || config.apolloURL == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -222,14 +218,14 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 
 	// Hit Tracksys API to get brief metadata
 	pidURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, data.PID)
-	jsonResp, err := getAPIResponse(pidURL)
+	jsonResp, err := apisvc.GetAPIResponse(pidURL)
 	if err != nil {
 		rw.WriteHeader(http.StatusServiceUnavailable)
 		fmt.Fprintf(rw, "Unable to connect with TrackSys to describe pid %s", data.PID)
 		return
 	}
 
-	parseJSONResponse(jsonResp, &data)
+	data.Title, data.Author = apisvc.ParseTracksysResponse(jsonResp)
 
 	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")
@@ -261,141 +257,5 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		} else {
 			fmt.Fprint(rw, renderedSnip.String())
 		}
-	}
-}
-
-func getAPIResponse(url string) (string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	respString := string(bodyBytes)
-	if resp.StatusCode != 200 {
-		return "", errors.New(respString)
-	}
-	return respString, nil
-}
-
-func parseJSONResponse(jsonStr string, data *oEmbedData) {
-	var jsonMap map[string]interface{}
-	json.Unmarshal([]byte(jsonStr), &jsonMap)
-	data.Title = jsonMap["title"].(string)
-	out, ok := jsonMap["creator"].(string)
-	if ok {
-		log.Printf("Got author [%s]", out)
-		data.Author = out
-	}
-}
-
-// Handle a request for images from a specific image PID and page offset (optional).
-func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	// pull page QP and use it for starting page. Any other params are ignored.
-	page, err := strconv.Atoi(req.URL.Query().Get("page"))
-	if err != nil {
-		page = 1
-	}
-
-	var data viewerData
-	data.StartPage = page - 1
-	data.URI = fmt.Sprintf("%s/%s", config.iiifURL, params.ByName("id"))
-
-	// Make sure there are images visable for this PID.
-	// Ahow an error page and bail if not
-	if isManifestViewable(data.URI) == false {
-		rw.WriteHeader(http.StatusNotFound)
-		bytes, _ := ioutil.ReadFile("web/not_available.html")
-		fmt.Fprintf(rw, "%s", string(bytes))
-		return
-	}
-
-	template, err := template.ParseFiles("templates/view.html")
-	if err != nil {
-		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
-		http.Error(rw, msg, http.StatusInternalServerError)
-	} else {
-		template.Execute(rw, data)
-	}
-}
-
-// Hit the target IIIF manifest URL and see if it contains any images
-func isManifestViewable(url string) bool {
-	timeout := time.Duration(10 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-	log.Printf("Checking manifest URL %s for images", url)
-	resp, err := client.Get(url)
-	if err != nil {
-		log.Printf("ERROR: IIIF URL: %s failed to return a response", url)
-		return false
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR: IIIF URL: %s returned non-success status: %d", url, resp.StatusCode)
-		return false
-	}
-	bytes, _ := ioutil.ReadAll(resp.Body)
-	respStr := string(bytes)
-
-	return strings.Contains(respStr, "dcTypes:Image")
-}
-
-// Check health of service
-func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	rw.Header().Set("Content-Type", "application/json")
-
-	// TCheck TrackSys
-	log.Printf("Checking Tracksys...")
-	tsStatus := true
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-	url := fmt.Sprintf("%s/pid/uva-lib:1157560/type", config.tracksysURL)
-	log.Printf("Tracksys test URL: %s", url)
-	resp, err := client.Get(url)
-	if err != nil {
-		log.Printf("ERROR: TrackSys service (%s)", err)
-		tsStatus = false
-	} else {
-		b, errRead := ioutil.ReadAll(resp.Body)
-		if errRead != nil {
-			log.Printf("ERROR: TrackSys service (%s)", errRead)
-			tsStatus = false
-		} else {
-			resp.Body.Close()
-			if string(b) != "sirsi_metadata" {
-				log.Printf("ERROR: TrackSys bad response (%s)", b)
-				tsStatus = false
-			}
-		}
-	}
-
-	// make sure IIIF manifest service is alive
-	log.Printf("Checking IIIF...")
-	iiifStatus := true
-	resp, err = client.Get(config.iiifURL)
-	if err != nil {
-		log.Printf("ERROR: IIIF service (%s)", err)
-		iiifStatus = false
-	} else {
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("ERROR: IIIF service (%s)", err)
-			iiifStatus = false
-		} else {
-			resp.Body.Close()
-			if strings.Contains(string(b), "IIIF metadata service") == false {
-				iiifStatus = false
-			}
-		}
-	}
-	out := fmt.Sprintf(`{"alive": true, "iiif": %t, "tracksys": %t}`, iiifStatus, tsStatus)
-	if iiifStatus == false {
-		http.Error(rw, out, http.StatusInternalServerError)
-	} else {
-		fmt.Fprintf(rw, out)
 	}
 }
