@@ -41,6 +41,7 @@ type configData struct {
 	tracksysURL string
 	apolloURL   string
 	iiifURL     string
+	fedoraURL   string
 	dovHost     string
 }
 
@@ -55,8 +56,8 @@ func main() {
 	// Set routes and start server
 	mux := httprouter.New()
 	mux.GET("/", loggingHandler(rootHandler))
-	mux.GET("/images/:id", loggingHandler(imagesHandler))
-	mux.GET("/wsls/:id", loggingHandler(wslsHandler))
+	mux.GET("/images/:pid", loggingHandler(imagesHandler))
+	mux.GET("/wsls/:pid", loggingHandler(wslsHandler))
 	mux.GET("/oembed", loggingHandler(oEmbedHandler))
 	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
 	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
@@ -71,11 +72,12 @@ func getConfiguration() {
 	flag.StringVar(&config.tracksysURL, "tracksys", os.Getenv("TRACKSYS_URL"), "TrackSys URL (required)")
 	flag.StringVar(&config.apolloURL, "apollo", os.Getenv("APOLLO_URL"), "Apollo URL (required)")
 	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
+	flag.StringVar(&config.fedoraURL, "fedora", os.Getenv("FEDORA"), "Fedora URL (required)")
 	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
 	flag.Parse()
 
 	// if anything is still not set, die
-	if config.tracksysURL == "" || config.iiifURL == "" || config.apolloURL == "" {
+	if config.tracksysURL == "" || config.iiifURL == "" || config.apolloURL == "" || config.fedoraURL == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -225,7 +227,9 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 		return
 	}
 
-	data.Title, data.Author = apisvc.ParseTracksysResponse(jsonResp)
+	tsMetadata := apisvc.ParseTracksysResponse(jsonResp)
+	data.Title = tsMetadata.Title
+	data.Author = tsMetadata.Author
 
 	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")

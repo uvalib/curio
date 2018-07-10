@@ -28,7 +28,7 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 
 	var data viewerData
 	data.StartPage = page - 1
-	data.URI = fmt.Sprintf("%s/%s", config.iiifURL, params.ByName("id"))
+	data.URI = fmt.Sprintf("%s/%s", config.iiifURL, params.ByName("pid"))
 
 	// Make sure there are images visable for this PID.
 	// Ahow an error page and bail if not
