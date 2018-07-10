@@ -5,17 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
-// This is a minimal mapping to get the name/value of an apollo node
-// Without the leading caps and json mapping, the unmarshall doesn't work
-type apolloItem struct {
-	ItemType struct {
-		Name string
-	} `json:"type"`
-	Value string
+// This is a minimal mapping of the apollo items API request to the
+// data needed by the digital object viewer. Note that alll property names
+// must be leading caps and match the json repspone field (case insensitive)
+// or be mapped with a json attribute
+type apolloResp struct {
+	Item struct {
+		Children []struct {
+			ItemType struct {
+				Name string
+			} `json:"type"`
+			Value string
+		}
+	}
 }
 
 // GetAPIResponse calls a JSON endpoint and returns the resoponce
@@ -36,27 +41,12 @@ func GetAPIResponse(url string) (string, error) {
 // ParseApolloWSLSResponse pulls title and author data from a tracksys API call
 func ParseApolloWSLSResponse(jsonStr string) (WSLSMetadata, error) {
 	var data WSLSMetadata
-	var jsonMap map[string]interface{}
-	json.Unmarshal([]byte(jsonStr), &jsonMap)
-	itemData, ok := jsonMap["item"].(map[string]interface{})
-	if !ok {
-		return data, errors.New("Missing item data in response")
+	var respStruct apolloResp
+	err := json.Unmarshal([]byte(jsonStr), &respStruct)
+	if err != nil {
+		return data, fmt.Errorf("Unable parse response: %s", err.Error())
 	}
-	children, ok := itemData["children"].([]interface{})
-	if !ok {
-		return data, errors.New("Missing item children in response")
-	}
-	for _, c := range children {
-		var item apolloItem
-		itemBytes, err := json.Marshal(c)
-		if err != nil {
-			return data, fmt.Errorf("Unable to extract child item data: %s", err.Error())
-		}
-		err = json.Unmarshal(itemBytes, &item)
-		if err != nil {
-			return data, fmt.Errorf("Unable to extract child item data: %s", err.Error())
-		}
-		log.Printf("===== Item STRUCT: %+v", item)
+	for _, item := range respStruct.Item.Children {
 		switch val := item.ItemType.Name; val {
 		case "wslsID":
 			data.WSLSID = item.Value
@@ -70,7 +60,6 @@ func ParseApolloWSLSResponse(jsonStr string) (WSLSMetadata, error) {
 			data.Description = item.Value
 		}
 	}
-
 	return data, nil
 }
 
