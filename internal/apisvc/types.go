@@ -8,9 +8,14 @@ type TrackSysMetadata struct {
 
 // WSLSMetadata contains the Apollo metadata supporting WSLS
 type WSLSMetadata struct {
-	HasVideo    bool
-	HasScript   bool
-	WSLSID      string
-	Title       string
-	Description string
+	HasVideo      bool
+	HasScript     bool
+	WSLSID        string
+	Title         string
+	Description   string
+	VideoURL      string
+	PosterURL     string
+	PDFURL        string
+	PDFThumbURL   string
+	TranscriptURL string
 }

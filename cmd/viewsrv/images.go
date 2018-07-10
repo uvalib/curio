@@ -39,7 +39,7 @@ func imagesHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 		return
 	}
 
-	template, err := template.ParseFiles("templates/view.html")
+	template, err := template.ParseFiles("templates/images/view.html")
 	if err != nil {
 		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
 		http.Error(rw, msg, http.StatusInternalServerError)

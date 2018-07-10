@@ -234,7 +234,7 @@ func renderOembedResponse(rawURL string, format string, maxWidth int, maxHeight 
 	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")
 	var renderedSnip bytes.Buffer
-	snippet := htemplate.Must(htemplate.ParseFiles("templates/embed.html"))
+	snippet := htemplate.Must(htemplate.ParseFiles("templates/images/embed.html"))
 	snipErr := snippet.Execute(&renderedSnip, data)
 	if snipErr != nil {
 		http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
