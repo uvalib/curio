@@ -2,12 +2,73 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <link href="https://vjs.zencdn.net/7.0.5/video-js.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/7.0.5/video.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+      body.wsls {
+        padding:15px; margin:0; text-align: center; font-family: 'Avenir', Helvetica, Arial, sans-serif; font-size: 13px; background: #222;
+      }
+      body.wsls .overview {
+        width: 640px; color: #ccc; margin: 0 auto;
+      }
+      body.wsls .overview h3 {
+        margin:  5px;
+      }
+      .video-container {
+        display:inline-block; color: #ccc;
+      }
+      .duration {
+        text-align: right; font-size:0.8em; margin: 5px 0 0 0;
+      }
+      .anchorscript-container {
+        width: 640px; margin: 0 auto; text-align: left; color: #ccc;
+      }
+      .anchorscript-container h4 {
+        margin: 0 0 10px 0;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 2px;
+      }
+      .anchorscript-container img {
+        float: left;
+      }
+      .anchorscript-links {
+        float: left; padding-left: 10px;
+      }
+      .anchorscript-links a {
+        display: block; font-size: 1.1em; color: #ccc; text-decoration: none;
+      }
+      .anchorscript-links a:hover {
+        color: #8cf;
+      }
+    </style>
 </head>
-<body style="padding:0; margin:0; text-align: center; font-family: 'Avenir', Helvetica, Arial, sans-serif;">
-  <div style="width: 800px; color: #444; margin: 0 auto;">
+<body class="wsls">
+  <div class="overview">
     <h3>{{.Title}}</h3>
     <p>{{.Description}}</p>
   </div>
-  <script src="https://vjs.zencdn.net/7.0.5/video.js"></script>
+  {{if .HasVideo}}
+  <div class="video-container" >
+    <video class="video-js vjs-default-skin vjs-big-play-centered" width="640" height="480" controls preload="auto"
+           poster="{{ .PosterURL }}" data-setup='{"inactivityTimeout": 0}' >
+      <source src="{{ .VideoURL}}" type='video/webm'>
+      <p class="vjs-no-js">
+        To view this video please enable JavaScript, and consider upgrading to a web browser that
+        <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+      </p>
+    </video>
+    <p class="duration">Duration: {{.Duration}}</p>
+  </div>
+  {{ end }}
+  {{if .HasScript}}
+  <div class="anchorscript-container">
+    <h4>Anchor Script</h4>
+    <img src="{{.PDFThumbURL}}"/>
+    <div class="anchorscript-links">
+      <a href="{{.PDFURL}}" target="_blank">View anchor script PDF in new tab</a>
+      <a href="{{.PDFThumbURL}}" target="_blank">View anchor script transcription in new tab</a>
+    </div>
+  </div>
+  {{ end }}
+
 </body>

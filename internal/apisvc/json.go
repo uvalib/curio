@@ -58,6 +58,8 @@ func ParseApolloWSLSResponse(jsonStr string) (WSLSMetadata, error) {
 			data.HasScript = (item.Value == "true")
 		case "abstract":
 			data.Description = item.Value
+		case "duration":
+			data.Duration = item.Value
 		}
 	}
 	return data, nil

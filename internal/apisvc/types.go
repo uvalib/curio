@@ -18,4 +18,5 @@ type WSLSMetadata struct {
 	PDFURL        string
 	PDFThumbURL   string
 	TranscriptURL string
+	Duration      string
 }
