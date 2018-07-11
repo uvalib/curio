@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	htemplate "html/template"
 	"log"
@@ -80,19 +81,43 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	resourceType := bits[1]
 
 	// See what type of resource is being requested
+	var respData oEmbedData
 	if resourceType == "images" {
-		renderImageResponse(parsedURL, pid, respFormat, maxWidth, maxHeight, rw, req)
+		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight, req.Host)
 	} else if resourceType == "wsls" {
-		renderWSLSResponse(parsedURL, pid, respFormat, maxWidth, maxHeight, rw, req)
+		respData, err = getWSLSData(parsedURL, pid, respFormat, maxWidth, maxHeight)
 	} else {
-		// Only support WSLS and Images for now
-		msg := fmt.Sprintf("Invalid resource type in URL: %s", bits[1])
-		http.Error(rw, msg, http.StatusInternalServerError)
+		err = fmt.Errorf("invalid resource type: %s", bits[1])
+	}
+
+	if err != nil {
+		log.Printf("ERROR: Unable to render oEmbed response: %s", err.Error())
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if respFormat == "json" {
+		log.Printf("Rendering JSON output")
+		rw.Header().Set("content-type", "application/json; charset=utf-8")
+		jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
+		jsonTemplate.Execute(rw, respData)
+	} else {
+		rw.Header().Set("content-type", "text/xml; charset=utf-8")
+		log.Printf("Rendering XML output")
+		var renderedSnip bytes.Buffer
+		snippet := htemplate.Must(htemplate.ParseFiles("templates/response.xml"))
+		snipErr := snippet.Execute(&renderedSnip, respData)
+		if snipErr != nil {
+			log.Printf("Unable to render XML template: %s", snipErr.Error())
+			http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
+		} else {
+			fmt.Fprint(rw, renderedSnip.String())
+		}
 	}
 }
 
-func renderImageResponse(tgtURL *url.URL, pid string, format string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
+func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqHost string) (oEmbedData, error) {
+	var respData oEmbedData
 	var data embedImageData
 	data.PID = pid
 	data.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, data.PID)
@@ -114,8 +139,7 @@ func renderImageResponse(tgtURL *url.URL, pid string, format string, maxWidth in
 	// Validate that the manifest has images
 	if isManifestViewable(data.SourceURI) == false {
 		log.Printf("Requested URL %s has no visible images", data.SourceURI)
-		http.Error(rw, "Sorry, the requested resource is not available.", http.StatusNotFound)
-		return
+		return respData, errors.New("requested resource is not available")
 	}
 
 	// scheme / host for UV javascript
@@ -125,7 +149,7 @@ func renderImageResponse(tgtURL *url.URL, pid string, format string, maxWidth in
 	}
 	data.EmbedHost = config.dovHost
 	if len(data.EmbedHost) == 0 {
-		data.EmbedHost = req.Host
+		data.EmbedHost = reqHost
 	}
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
@@ -144,8 +168,7 @@ func renderImageResponse(tgtURL *url.URL, pid string, format string, maxWidth in
 	snippet := htemplate.Must(htemplate.ParseFiles("templates/images/embed.html"))
 	snipErr := snippet.Execute(&renderedSnip, data)
 	if snipErr != nil {
-		http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
-		return
+		return respData, snipErr
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
@@ -153,40 +176,19 @@ func renderImageResponse(tgtURL *url.URL, pid string, format string, maxWidth in
 	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, data.PID)
 	jsonResp, err := apisvc.GetAPIResponse(metadataURL)
 	if err != nil {
-		rw.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(rw, "Unable to connect with TrackSys to describe pid %s", data.PID)
-		return
+		return respData, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", data.PID)
 	}
 	tsMetadata := apisvc.ParseTracksysResponse(jsonResp)
 
-	var respData oEmbedData
 	respData.Title = tsMetadata.Title
 	respData.Author = tsMetadata.Author
 	respData.HTML = strconv.Quote(rawHTML)
 	respData.Width = data.Width
 	respData.Height = data.Height
-	log.Printf("Data for oEmbed Response: %+v", respData)
-
-	if format == "json" {
-		log.Printf("Rendering JSON output")
-		rw.Header().Set("content-type", "application/json; charset=utf-8")
-		jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
-		jsonTemplate.Execute(rw, respData)
-	} else {
-		rw.Header().Set("content-type", "text/xml; charset=utf-8")
-		log.Printf("Rendering XML output")
-		var renderedSnip bytes.Buffer
-		snippet := htemplate.Must(htemplate.ParseFiles("templates/response.xml"))
-		snipErr := snippet.Execute(&renderedSnip, respData)
-		if snipErr != nil {
-			log.Printf("Unable to render XML template: %s", snipErr.Error())
-			http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
-		} else {
-			fmt.Fprint(rw, renderedSnip.String())
-		}
-	}
+	return respData, nil
 }
 
-func renderWSLSResponse(tgtURL *url.URL, pid string, respFormat string, maxWidth int, maxHeight int, rw http.ResponseWriter, req *http.Request) {
-
+func getWSLSData(tgtURL *url.URL, pid string, respFormat string, maxWidth int, maxHeight int) (oEmbedData, error) {
+	var respData oEmbedData
+	return respData, nil
 }
