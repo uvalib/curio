@@ -51,7 +51,7 @@ func getConfiguration() {
 	flag.StringVar(&config.tracksysURL, "tracksys", os.Getenv("TRACKSYS_URL"), "TrackSys URL (required)")
 	flag.StringVar(&config.apolloURL, "apollo", os.Getenv("APOLLO_URL"), "Apollo URL (required)")
 	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
-	flag.StringVar(&config.fedoraURL, "fedora", os.Getenv("FEDORA_URL"), "Fedora URL (required)")
+	flag.StringVar(&config.fedoraURL, "fedora", os.Getenv("WSLS_FEDORA_URL"), "WSLS Fedora URL (required)")
 	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
 	flag.Parse()
 
