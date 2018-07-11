@@ -25,13 +25,18 @@ type oEmbedData struct {
 }
 
 type embedImageData struct {
-	PID       string
 	Width     int
 	Height    int
 	SourceURI string
 	Scheme    string
 	EmbedHost string
 	StartPage int
+}
+
+type embedWSLSData struct {
+	Width     int
+	Height    int
+	SourceURI string
 }
 
 // Handle a request for oembed data
@@ -85,7 +90,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	if resourceType == "images" {
 		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight, req.Host)
 	} else if resourceType == "wsls" {
-		respData, err = getWSLSData(parsedURL, pid, respFormat, maxWidth, maxHeight)
+		respData, err = getWSLSData(parsedURL, pid, maxWidth, maxHeight)
 	} else {
 		err = fmt.Errorf("invalid resource type: %s", bits[1])
 	}
@@ -119,8 +124,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqHost string) (oEmbedData, error) {
 	var respData oEmbedData
 	var data embedImageData
-	data.PID = pid
-	data.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, data.PID)
+	data.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
 
 	// Get page param if any...
 	qp, _ := url.ParseQuery(tgtURL.RawQuery)
@@ -173,10 +177,10 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqH
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
 	// Hit Tracksys API to get brief metadata
-	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, data.PID)
+	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, pid)
 	jsonResp, err := apisvc.GetAPIResponse(metadataURL)
 	if err != nil {
-		return respData, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", data.PID)
+		return respData, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
 	}
 	tsMetadata := apisvc.ParseTracksysResponse(jsonResp)
 
@@ -188,7 +192,50 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqH
 	return respData, nil
 }
 
-func getWSLSData(tgtURL *url.URL, pid string, respFormat string, maxWidth int, maxHeight int) (oEmbedData, error) {
+func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmbedData, error) {
 	var respData oEmbedData
+	var snipData embedWSLSData
+
+	snipData.SourceURI = tgtURL.String()
+	snipData.Width = 670
+	if maxWidth > 0 && maxWidth < snipData.Width {
+		snipData.Width = maxWidth
+	}
+	snipData.Height = 800
+	if maxHeight > 0 && maxHeight < snipData.Height {
+		snipData.Height = maxHeight
+	}
+
+	log.Printf("Rendering html snippet...")
+	var renderedSnip bytes.Buffer
+	snippet := htemplate.Must(htemplate.ParseFiles("templates/wsls/embed.html"))
+	snipErr := snippet.Execute(&renderedSnip, snipData)
+	if snipErr != nil {
+		return respData, snipErr
+	}
+	rawHTML := strings.TrimSpace(renderedSnip.String())
+
+	log.Printf("Get Apollo PID for %s", pid)
+	pidURL := fmt.Sprintf("%s/external/%s", config.apolloURL, pid)
+	apolloPID, err := apisvc.GetAPIResponse(pidURL)
+	if err != nil {
+		return respData, err
+	}
+
+	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, apolloPID)
+	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
+	if err != nil {
+		return respData, err
+	}
+
+	// ... and parse it into the necessary data for the viewer
+	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
+	if parseErr != nil {
+		return respData, parseErr
+	}
+	respData.Title = wslsData.Title
+	respData.HTML = strconv.Quote(rawHTML)
+	respData.Width = snipData.Width
+	respData.Height = snipData.Height
 	return respData, nil
 }
