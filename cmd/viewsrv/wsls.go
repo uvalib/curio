@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/uvalib/digital-object-viewer/internal/apisvc"
 )
 
 // Handle a request for a WSLS item
@@ -17,7 +16,7 @@ func wslsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
 	srcPID := params.ByName("pid")
 	log.Printf("Get Apollo PID for %s", srcPID)
 	pidURL := fmt.Sprintf("%s/external/%s", config.apolloURL, srcPID)
-	apolloPID, err := apisvc.GetAPIResponse(pidURL)
+	apolloPID, err := GetAPIResponse(pidURL)
 	if err != nil {
 		log.Printf("ERROR: unable to get apollo pid for %s: %s", srcPID, err.Error())
 		rw.WriteHeader(http.StatusNotFound)
@@ -28,7 +27,7 @@ func wslsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
 
 	// Use the ApolloPID to get metadata describing the items...
 	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, apolloPID)
-	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
+	metadataJSON, err := GetAPIResponse(metadataURL)
 	if err != nil {
 		log.Printf("ERROR: unable to parse apollo response for %s: %s", apolloPID, err.Error())
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -37,7 +36,7 @@ func wslsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
 	}
 
 	// ... and parse it into the necessary data for the viewer
-	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
+	wslsData, parseErr := ParseApolloWSLSResponse(metadataJSON)
 	if parseErr != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(rw, "Unable to connect parse Apollo response for PID %s: %s", apolloPID, parseErr.Error())

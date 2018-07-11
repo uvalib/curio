@@ -13,7 +13,6 @@ import (
 	"text/template"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/uvalib/digital-object-viewer/internal/apisvc"
 )
 
 type oEmbedData struct {
@@ -178,11 +177,11 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqH
 
 	// Hit Tracksys API to get brief metadata
 	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, pid)
-	jsonResp, err := apisvc.GetAPIResponse(metadataURL)
+	jsonResp, err := GetAPIResponse(metadataURL)
 	if err != nil {
 		return respData, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
 	}
-	tsMetadata := apisvc.ParseTracksysResponse(jsonResp)
+	tsMetadata := ParseTracksysResponse(jsonResp)
 
 	respData.Title = tsMetadata.Title
 	respData.Author = tsMetadata.Author
@@ -217,19 +216,19 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmb
 
 	log.Printf("Get Apollo PID for %s", pid)
 	pidURL := fmt.Sprintf("%s/external/%s", config.apolloURL, pid)
-	apolloPID, err := apisvc.GetAPIResponse(pidURL)
+	apolloPID, err := GetAPIResponse(pidURL)
 	if err != nil {
 		return respData, err
 	}
 
 	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, apolloPID)
-	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
+	metadataJSON, err := GetAPIResponse(metadataURL)
 	if err != nil {
 		return respData, err
 	}
 
 	// ... and parse it into the necessary data for the viewer
-	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
+	wslsData, parseErr := ParseApolloWSLSResponse(metadataJSON)
 	if parseErr != nil {
 		return respData, parseErr
 	}
