@@ -12,6 +12,5 @@ dist/
 /src
 /cmd/viewsrv/vendor
 env.*
-/pkg
 web/test.html
 info.txt

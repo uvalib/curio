@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the service
-const Version = "1.3.0"
+const Version = "1.3.1"
 
 type configData struct {
 	port        int

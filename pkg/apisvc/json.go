@@ -1,4 +1,4 @@
-package main
+package apisvc
 
 import (
 	"encoding/json"
@@ -7,27 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 )
-
-// TrackSysMetadata contains the basic metadata returned from the Tracksys API
-type TrackSysMetadata struct {
-	Title  string
-	Author string
-}
-
-// WSLSMetadata contains the Apollo metadata supporting WSLS
-type WSLSMetadata struct {
-	HasVideo      bool
-	HasScript     bool
-	WSLSID        string
-	Title         string
-	Description   string
-	VideoURL      string
-	PosterURL     string
-	PDFURL        string
-	PDFThumbURL   string
-	TranscriptURL string
-	Duration      string
-}
 
 // This is a minimal mapping of the apollo items API request to the
 // data needed by the digital object viewer. Note that alll property names
