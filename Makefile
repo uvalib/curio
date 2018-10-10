@@ -17,7 +17,7 @@ RUNNER=scripts/entry.sh
 
 build: build-darwin build-linux copy-web
 
-all: deps build-darwin build-linux copy-web
+all: build-darwin build-linux copy-web
 
 build-darwin:
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin $(SRC_TREE)/*.go
