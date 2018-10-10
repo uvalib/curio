@@ -215,14 +215,7 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmb
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	log.Printf("Get Apollo PID for %s", pid)
-	pidURL := fmt.Sprintf("%s/external/%s", config.apolloURL, pid)
-	apolloPID, err := apisvc.GetAPIResponse(pidURL)
-	if err != nil {
-		return respData, err
-	}
-
-	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, apolloPID)
+	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, pid)
 	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
 	if err != nil {
 		return respData, err
