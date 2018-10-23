@@ -9,5 +9,4 @@ It supports the following endpoints:
 * /oembed : implementation of the oEmbed spec described here: https://oembed.com/
 
 ### System Requirements
-* GO version 1.9.2 or greater
-* DEP (https://golang.github.io/dep/) version 0.4.1 or greater
+* GO version 1.11.0 or greater

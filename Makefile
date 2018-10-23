@@ -2,54 +2,29 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
-GOVET=$(GOCMD) vet
-GOFMT=$(GOCMD) fmt
-GOGET=$(GOCMD) get
-PWD=$(shell pwd)
-BIN=$(PWD)/bin
-SRC=$(PWD)/src
-VENDOR=$(SRC)/viewsrv/vendor
 
-# project specific definitions
 BASE_NAME=digital-object-viewer
-SRC_TREE=cmd/viewsrv
-RUNNER=scripts/entry.sh
 
-build: build-darwin build-linux copy-web
+build: darwin copy-web
 
-all: build-darwin build-linux copy-web
+all: darwin linux copy-web
 
-build-darwin:
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin $(SRC_TREE)/*.go
+linux-full: linux copy-web
+
+darwin-full: darwin copy-web
+
+darwin:
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin cmd/viewsrv/*.go
+
+linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux cmd/viewsrv/*.go
 
 copy-web:
+	mkdir -p bin/
+	rm -rf bin/web
+	rm -rf bin/templates
 	cp -R web/ bin/web/
 	cp -R templates bin/templates/
 
-build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux $(SRC_TREE)/*.go
-
-fmt:
-	$(GOFMT) $(SRC_TREE)/*
-
-vet:
-	$(GOVET) $(SRC_TREE)/*
-
 clean:
-	$(GOCLEAN)
-	rm -rf $(BIN)
-
-run:
-	rm -f $(BIN)/$(BASE_NAME)
-	ln -s $(BIN)/$(BASE_NAME).darwin $(BIN)/$(BASE_NAME)
-	$(RUNNER)
-
-prep:
-	rm -f $(VENDOR)
-	rm -f $(SRC)
-	ln -s $(PWD)/cmd $(SRC)
-	ln -s $(PWD)/vendor $(VENDOR)
-
-deps:
-	dep ensure
-	dep status
+	rm -rf bin
