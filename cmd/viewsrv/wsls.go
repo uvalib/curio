@@ -2,45 +2,29 @@ package main
 
 import (
 	"fmt"
-	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gin-gonic/gin"
 	"github.com/uvalib/digital-object-viewer/pkg/apisvc"
 )
 
-// Handle a request for a WSLS item
-func wslsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	// First, find the ApolloID for this PID...
-	srcPID := params.ByName("pid")
-	log.Printf("Get Apollo PID for %s", srcPID)
-	pidURL := fmt.Sprintf("%s/external/%s", config.apolloURL, srcPID)
-	apolloPID, err := apisvc.GetAPIResponse(pidURL)
-	if err != nil {
-		log.Printf("ERROR: unable to get apollo pid for %s: %s", srcPID, err.Error())
-		rw.WriteHeader(http.StatusNotFound)
-		bytes, _ := ioutil.ReadFile("web/not_available.html")
-		fmt.Fprintf(rw, "%s", string(bytes))
-		return
-	}
-
-	// Use the ApolloPID to get metadata describing the items...
-	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, apolloPID)
+// wslsHandler accepts a request for a WSLS item and renders in in a custom viewer
+func wslsHandler(c *gin.Context) {
+	srcPID := c.Param("pid")
+	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, srcPID)
 	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
 	if err != nil {
-		log.Printf("ERROR: unable to parse apollo response for %s: %s", apolloPID, err.Error())
-		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, "Unable to connect with Apollo get metadata for Apollo PID %s", apolloPID)
+		log.Printf("ERROR: Unable to connect with Apollo get metadata for Apollo PID %s: %s", srcPID, err.Error())
+		c.String(http.StatusServiceUnavailable, "Unable to retrieve metadata for %s", srcPID)
 		return
 	}
 
 	// ... and parse it into the necessary data for the viewer
 	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
 	if parseErr != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(rw, "Unable to connect parse Apollo response for PID %s: %s", apolloPID, parseErr.Error())
+		log.Printf("ERROR: Unable to parse Apollo response for %s: %s", srcPID, parseErr.Error())
+		c.String(http.StatusInternalServerError, "Unable to retrieve metadata for %s", srcPID)
 		return
 	}
 
@@ -60,11 +44,5 @@ func wslsHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Pa
 		wslsData.TranscriptURL = fmt.Sprintf("%s/%s/%s.txt", config.fedoraURL, wslsData.WSLSID, wslsData.WSLSID)
 	}
 
-	template, err := template.ParseFiles("templates/wsls/view.html")
-	if err != nil {
-		msg := fmt.Sprintf("Unable to render viewer: %s", err.Error())
-		http.Error(rw, msg, http.StatusInternalServerError)
-	} else {
-		template.Execute(rw, wslsData)
-	}
+	c.HTML(http.StatusOK, "wsls_view.html", wslsData)
 }

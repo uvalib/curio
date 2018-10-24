@@ -2,28 +2,43 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	htemplate "html/template"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"text/template"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gin-gonic/gin"
 	"github.com/uvalib/digital-object-viewer/pkg/apisvc"
 )
 
-type oEmbedData struct {
-	Title  string
-	Author string
-	HTML   string
-	Width  int
-	Height int
+type oembed struct {
+	Version     string `json:"version,omitempty" xml:"version,omitempty"`
+	Type        string `json:"type,omitempty" xml:"type,omitempty"`
+	Title       string `json:"title,omitempty" xml:"title,omitempty"`
+	Author      string `json:"author,omitempty" xml:"author,omitempty"`
+	HTML        string `json:"html,omitempty" xml:"html,omitempty"`
+	Width       int    `json:"width,omitempty" xml:"width,omitempty"`
+	Height      int    `json:"height,omitempty" xml:"height,omitempty"`
+	Provider    string `json:"provider,omitempty" xml:"provider,omitempty"`
+	ProviderURL string `json:"provider_url,omitempty" xml:"provider_url,omitempty"`
 }
 
+// custom marshal that doesn't do the weird escaling of < >
+func marshalJSON(t interface{}) string {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "   ")
+	encoder.Encode(t)
+	return buffer.String()
+}
+
+// embedImageData is the data needed to render the HTML snippet fot embedded images
 type embedImageData struct {
 	Width     int
 	Height    int
@@ -39,36 +54,35 @@ type embedWSLSData struct {
 	SourceURI string
 }
 
-// Handle a request for oembed data
-func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+// oEmbedHandler returns the oEmbed data for a view
+func oEmbedHandler(c *gin.Context) {
 	// Get some optional params; format, maxWidth and maxHeight
-	respFormat := req.URL.Query().Get("format")
+	respFormat := c.Query("format")
 	if respFormat == "" {
 		respFormat = "json"
 	}
 
-	maxWidth, err := strconv.Atoi(req.URL.Query().Get("maxwidth"))
+	maxWidth, err := strconv.Atoi(c.Query("maxwidth"))
 	if err != nil {
 		maxWidth = 0
 	}
 
-	maxHeight, err := strconv.Atoi(req.URL.Query().Get("maxheight"))
+	maxHeight, err := strconv.Atoi(c.Query("maxheight"))
 	if err != nil {
 		maxHeight = 0
 	}
 
 	// Next, get the required URL and see if a page is requested
-	urlStr, _ := url.QueryUnescape(req.URL.Query().Get("url"))
+	urlStr, _ := url.QueryUnescape(c.Query("url"))
 	if len(urlStr) == 0 {
-		http.Error(rw, "URL is required!", http.StatusBadRequest)
+		c.String(http.StatusBadRequest, "A URL param is required!")
 		return
 	}
 
 	// The raw URL requested must be of the expected format: [http|https]://[host]/[images|wsls]/[PID][?page=n]
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
-		msg := fmt.Sprintf("Invalid URL: %s", err.Error())
-		http.Error(rw, msg, http.StatusInternalServerError)
+		c.String(http.StatusBadRequest, "Invalid URL: %s", err.Error())
 		return
 	}
 
@@ -77,8 +91,7 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	relPath := parsedURL.Path
 	bits := strings.Split(relPath, "/")
 	if len(bits) != 3 {
-		msg := fmt.Sprintf("Invalid URL in request: %s", urlStr)
-		http.Error(rw, msg, http.StatusInternalServerError)
+		c.String(http.StatusBadRequest, "Invalid URL in request: %s", urlStr)
 		return
 	}
 
@@ -86,9 +99,9 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 	resourceType := bits[1]
 
 	// See what type of resource is being requested
-	var respData oEmbedData
+	var respData oembed
 	if resourceType == "images" {
-		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight, req.Host)
+		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight)
 	} else if resourceType == "wsls" {
 		respData, err = getWSLSData(parsedURL, pid, maxWidth, maxHeight)
 	} else {
@@ -97,80 +110,67 @@ func oEmbedHandler(rw http.ResponseWriter, req *http.Request, params httprouter.
 
 	if err != nil {
 		log.Printf("ERROR: Unable to render oEmbed response: %s", err.Error())
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, "Unable to render oEmbed response: %s", err.Error())
 		return
 	}
 
 	if respFormat == "json" {
 		log.Printf("Rendering JSON output")
-		rw.Header().Set("content-type", "application/json; charset=utf-8")
-		jsonTemplate := template.Must(template.ParseFiles("templates/response.json"))
-		jsonTemplate.Execute(rw, respData)
+		c.Header("content-type", "application/json; charset=utf-8")
+		out := marshalJSON(respData)
+		c.String(http.StatusOK, out)
 	} else {
-		rw.Header().Set("content-type", "text/xml; charset=utf-8")
-		log.Printf("Rendering XML output")
-		var renderedSnip bytes.Buffer
-		snippet := htemplate.Must(htemplate.ParseFiles("templates/response.xml"))
-		snipErr := snippet.Execute(&renderedSnip, respData)
-		if snipErr != nil {
-			log.Printf("Unable to render XML template: %s", snipErr.Error())
-			http.Error(rw, snipErr.Error(), http.StatusInternalServerError)
-		} else {
-			fmt.Fprint(rw, renderedSnip.String())
-		}
+		c.XML(http.StatusOK, respData)
 	}
 }
 
-func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqHost string) (oEmbedData, error) {
-	var respData oEmbedData
-	var data embedImageData
-	data.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
+func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
+	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
+	var imgData embedImageData
+	imgData.EmbedHost = config.dovHost
+	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
 
 	// Get page param if any...
 	qp, _ := url.ParseQuery(tgtURL.RawQuery)
-	data.StartPage = 0
+	imgData.StartPage = 0
 	if len(qp["page"]) > 0 {
-		data.StartPage, _ = strconv.Atoi(qp["page"][0])
+		imgData.StartPage, _ = strconv.Atoi(qp["page"][0])
 	}
 
 	// accept 1 based page numbers from client, but use
 	// 0-based canvas index in UV embed snippet
-	if data.StartPage > 0 {
-		data.StartPage--
-		log.Printf("Requested starting page index %d", data.StartPage)
+	if imgData.StartPage > 0 {
+		imgData.StartPage--
+		log.Printf("Requested starting page index %d", imgData.StartPage)
 	}
 
 	// Validate that the manifest has images
-	if isManifestViewable(data.SourceURI) == false {
-		log.Printf("Requested URL %s has no visible images", data.SourceURI)
+	if isManifestViewable(imgData.SourceURI) == false {
+		log.Printf("Requested URL %s has no visible images", imgData.SourceURI)
 		return respData, errors.New("requested resource is not available")
 	}
 
 	// scheme / host for UV javascript
-	data.Scheme = "http"
-	if strings.Contains(data.SourceURI, "https") {
-		data.Scheme = "https"
-	}
-	data.EmbedHost = config.dovHost
-	if len(data.EmbedHost) == 0 {
-		data.EmbedHost = reqHost
+	imgData.Scheme = "http"
+	if strings.Contains(imgData.SourceURI, "https") {
+		imgData.Scheme = "https"
 	}
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
-	data.Width = 800
-	if maxWidth > 0 && maxWidth < data.Width {
-		data.Width = maxWidth
+	imgData.Width = 800
+	if maxWidth > 0 && maxWidth < imgData.Width {
+		imgData.Width = maxWidth
 	}
-	data.Height = 600
-	if maxHeight > 0 && maxHeight < data.Height {
-		data.Height = maxHeight
+	imgData.Height = 600
+	if maxHeight > 0 && maxHeight < imgData.Height {
+		imgData.Height = maxHeight
 	}
 
 	// Render the <div> that will be included in the response, and used to embed the resource
 	log.Printf("Rendering html snippet...")
 	var renderedSnip bytes.Buffer
-	snippet := htemplate.Must(htemplate.ParseFiles("templates/images/embed.html"))
-	snipErr := snippet.Execute(&renderedSnip, data)
+	snippet := template.Must(template.ParseFiles("templates/image_embed.html"))
+	snipErr := snippet.Execute(&renderedSnip, imgData)
 	if snipErr != nil {
 		return respData, snipErr
 	}
@@ -186,14 +186,14 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, reqH
 
 	respData.Title = tsMetadata.Title
 	respData.Author = tsMetadata.Author
-	respData.HTML = strconv.Quote(rawHTML)
-	respData.Width = data.Width
-	respData.Height = data.Height
+	respData.HTML = rawHTML
+	respData.Width = imgData.Width
+	respData.Height = imgData.Height
 	return respData, nil
 }
 
-func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmbedData, error) {
-	var respData oEmbedData
+func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
+	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var snipData embedWSLSData
 
 	snipData.SourceURI = tgtURL.String()
@@ -208,7 +208,7 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmb
 
 	log.Printf("Rendering html snippet...")
 	var renderedSnip bytes.Buffer
-	snippet := htemplate.Must(htemplate.ParseFiles("templates/wsls/embed.html"))
+	snippet := template.Must(template.ParseFiles("templates/wsls_embed.html"))
 	snipErr := snippet.Execute(&renderedSnip, snipData)
 	if snipErr != nil {
 		return respData, snipErr
@@ -227,7 +227,7 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oEmb
 		return respData, parseErr
 	}
 	respData.Title = wslsData.Title
-	respData.HTML = strconv.Quote(rawHTML)
+	respData.HTML = rawHTML
 	respData.Width = snipData.Width
 	respData.Height = snipData.Height
 	return respData, nil

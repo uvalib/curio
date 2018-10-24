@@ -9,13 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gin-gonic/gin"
 )
 
-func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	rw.Header().Set("Content-Type", "application/json")
-
-	// TCheck TrackSys
+func healthCheckHandler(c *gin.Context) {
 	log.Printf("Checking Tracksys...")
 	tsStatus := true
 	timeout := time.Duration(5 * time.Second)
@@ -61,10 +58,5 @@ func healthCheckHandler(rw http.ResponseWriter, req *http.Request, params httpro
 			}
 		}
 	}
-	out := fmt.Sprintf(`{"alive": true, "iiif": %t, "tracksys": %t}`, iiifStatus, tsStatus)
-	if iiifStatus == false {
-		http.Error(rw, out, http.StatusInternalServerError)
-	} else {
-		fmt.Fprintf(rw, out)
-	}
+	c.JSON(http.StatusOK, gin.H{"alive": true, "iiif": iiifStatus, "tracksys": tsStatus})
 }

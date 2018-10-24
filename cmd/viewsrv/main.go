@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/julienschmidt/httprouter"
-	"github.com/rs/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 // Version of the service
@@ -29,60 +29,68 @@ var config configData
 
 func main() {
 	// Load cfg
-	log.Printf("===> viewer staring up <===")
+	log.Printf("===> Digital Object Viewer staring up <===")
 	getConfiguration()
 
 	// Set routes and start server
-	mux := httprouter.New()
-	mux.GET("/", loggingHandler(rootHandler))
-	mux.GET("/images/:pid", loggingHandler(imagesHandler))
-	mux.GET("/wsls/:pid", loggingHandler(wslsHandler))
-	mux.GET("/oembed", loggingHandler(oEmbedHandler))
-	mux.GET("/healthcheck", loggingHandler(healthCheckHandler))
-	mux.ServeFiles("/web/*filepath", http.Dir("web/"))
-	log.Printf("Start service on port %d with CORS support enabled", config.port)
-	port := fmt.Sprintf(":%d", config.port)
-	http.ListenAndServe(port, cors.Default().Handler(mux))
+	gin.SetMode(gin.ReleaseMode)
+	gin.DisableConsoleColor()
+	router := gin.Default()
+
+	// load all of the templates
+	router.LoadHTMLFiles("./templates/image_view.html", "./templates/wsls_view.html", "./templates/not_available.html")
+
+	// Set routes and start server
+	router.Use(cors.Default())
+	router.GET("/version", versionHandler)
+	router.GET("/healthcheck", healthCheckHandler)
+	router.Use(static.Serve("/web", static.LocalFile("./web", true)))
+	router.GET("/images/:pid", imagesHandler)
+	router.GET("/wsls/:pid", wslsHandler)
+	router.GET("/oembed", oEmbedHandler)
+
+	portStr := fmt.Sprintf(":%d", config.port)
+	log.Printf("Start HTTP service on port %s with CORS support enabled", portStr)
+	log.Fatal(router.Run(portStr))
 }
 
 func getConfiguration() {
+	defTracksysURL := os.Getenv("TRACKSYS_URL")
+	if defTracksysURL == "" {
+		defTracksysURL = "https://tracksys.lib.virginia.edu/api"
+	}
+
+	defApolloURL := os.Getenv("APOLLO_URL")
+	if defApolloURL == "" {
+		defApolloURL = "https://apollo.lib.virginia.edu/api"
+	}
+
+	defIIIFURL := os.Getenv("DOV_IIIF_MAN_URL")
+	if defIIIFURL == "" {
+		defIIIFURL = "https://iiifman.lib.virginia.edu/pid"
+	}
+
+	defFedoraURL := os.Getenv("WSLS_FEDORA_URL")
+	if defFedoraURL == "" {
+		defFedoraURL = "http://fedora01.lib.virginia.edu/wsls"
+	}
+
+	defHost := os.Getenv("DOV_HOST")
+	if defHost == "" {
+		defHost = "doviewer.lib.virginia.edu"
+	}
+
 	// FIRST, try command line flags. Fallback is ENV variables
 	flag.IntVar(&config.port, "port", 8085, "Port to offer service on (default 8085)")
-	flag.StringVar(&config.tracksysURL, "tracksys", os.Getenv("TRACKSYS_URL"), "TrackSys URL (required)")
-	flag.StringVar(&config.apolloURL, "apollo", os.Getenv("APOLLO_URL"), "Apollo URL (required)")
-	flag.StringVar(&config.iiifURL, "iiif", os.Getenv("IIIF"), "IIIF URL (required)")
-	flag.StringVar(&config.fedoraURL, "fedora", os.Getenv("WSLS_FEDORA_URL"), "WSLS Fedora URL (required)")
-	flag.StringVar(&config.dovHost, "dovhost", os.Getenv("DOV_HOST"), "DoViewer Hostname (optional)")
+	flag.StringVar(&config.tracksysURL, "tracksys", defTracksysURL, "TrackSys URL")
+	flag.StringVar(&config.apolloURL, "apollo", defApolloURL, "Apollo URL")
+	flag.StringVar(&config.iiifURL, "iiif", defIIIFURL, "IIIF Manifest URL")
+	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
+	flag.StringVar(&config.dovHost, "dovhost", defHost, "DoViewer Hostname")
 	flag.Parse()
-
-	// if anything is still not set, die
-	if config.tracksysURL == "" || config.iiifURL == "" || config.apolloURL == "" || config.fedoraURL == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-	if len(config.dovHost) == 0 {
-		log.Printf("DOV host not set; this info will be extracted from request headers")
-	} else {
-		log.Printf("DOV host set to: %s", config.dovHost)
-	}
-}
-
-/**
- * Function Adapter for httprouter handlers that will log start and complete info.
- * A bit different than usual looking adapter because of the httprouter library used. Foun
- * this code here:
- *   https://stackoverflow.com/questions/43964461/how-to-use-middlewares-when-using-julienschmidt-httprouter-in-golang
- */
-func loggingHandler(next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-		start := time.Now()
-		log.Printf("Started %s %s", req.Method, req.RequestURI)
-		next(w, req, ps)
-		log.Printf("Completed %s %s in %s", req.Method, req.RequestURI, time.Since(start))
-	}
 }
 
 // Handle a request for / and return version info
-func rootHandler(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	fmt.Fprintf(rw, "UVA Viewer version %s", Version)
+func versionHandler(c *gin.Context) {
+	c.String(http.StatusOK, "UVA Viewer version %s", Version)
 }
