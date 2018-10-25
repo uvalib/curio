@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/uvalib/digital-object-viewer/pkg/apisvc"
 )
 
 type oembed struct {
@@ -29,12 +28,12 @@ type oembed struct {
 }
 
 // custom marshal that doesn't do the weird escaling of < >
-func marshalJSON(t interface{}) string {
+func (o *oembed) marshalJSON() string {
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
 	encoder.SetIndent("", "   ")
-	encoder.Encode(t)
+	encoder.Encode(o)
 	return buffer.String()
 }
 
@@ -117,8 +116,7 @@ func oEmbedHandler(c *gin.Context) {
 	if respFormat == "json" {
 		log.Printf("Rendering JSON output")
 		c.Header("content-type", "application/json; charset=utf-8")
-		out := marshalJSON(respData)
-		c.String(http.StatusOK, out)
+		c.String(http.StatusOK, respData.marshalJSON())
 	} else {
 		c.XML(http.StatusOK, respData)
 	}
@@ -176,13 +174,10 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oem
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	// Hit Tracksys API to get brief metadata
-	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, pid)
-	jsonResp, err := apisvc.GetAPIResponse(metadataURL)
+	tsMetadata, err := getTracksysMetadata(pid)
 	if err != nil {
-		return respData, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
+		return respData, err
 	}
-	tsMetadata := apisvc.ParseTracksysResponse(jsonResp)
 
 	respData.Title = tsMetadata.Title
 	respData.Author = tsMetadata.Author
@@ -215,14 +210,7 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oemb
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, pid)
-	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
-	if err != nil {
-		return respData, err
-	}
-
-	// ... and parse it into the necessary data for the viewer
-	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
+	wslsData, parseErr := getApolloWSLSMetadata(pid)
 	if parseErr != nil {
 		return respData, parseErr
 	}

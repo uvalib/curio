@@ -42,6 +42,7 @@ func main() {
 
 	// Set routes and start server
 	router.Use(cors.Default())
+	router.GET("/", versionHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
 	router.Use(static.Serve("/web", static.LocalFile("./web", true)))
@@ -92,5 +93,5 @@ func getConfiguration() {
 
 // Handle a request for / and return version info
 func versionHandler(c *gin.Context) {
-	c.String(http.StatusOK, "UVA Viewer version %s", Version)
+	c.String(http.StatusOK, "Digital Object Viewer version %s", Version)
 }

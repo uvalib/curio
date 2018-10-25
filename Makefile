@@ -14,10 +14,10 @@ linux-full: linux copy-web
 darwin-full: darwin copy-web
 
 darwin:
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin cmd/viewsrv/*.go
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin viewsrv/*.go
 
 linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux cmd/viewsrv/*.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux viewsrv/*.go
 
 copy-web:
 	mkdir -p bin/

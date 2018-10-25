@@ -6,24 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/uvalib/digital-object-viewer/pkg/apisvc"
 )
 
 // wslsHandler accepts a request for a WSLS item and renders in in a custom viewer
 func wslsHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
-	metadataURL := fmt.Sprintf("%s/items/%s", config.apolloURL, srcPID)
-	metadataJSON, err := apisvc.GetAPIResponse(metadataURL)
-	if err != nil {
-		log.Printf("ERROR: Unable to connect with Apollo get metadata for Apollo PID %s: %s", srcPID, err.Error())
-		c.String(http.StatusServiceUnavailable, "Unable to retrieve metadata for %s", srcPID)
-		return
-	}
-
-	// ... and parse it into the necessary data for the viewer
-	wslsData, parseErr := apisvc.ParseApolloWSLSResponse(metadataJSON)
+	wslsData, parseErr := getApolloWSLSMetadata(srcPID)
 	if parseErr != nil {
-		log.Printf("ERROR: Unable to parse Apollo response for %s: %s", srcPID, parseErr.Error())
+		log.Printf("ERROR: Unable to get Apollo response for %s: %s", srcPID, parseErr.Error())
 		c.String(http.StatusInternalServerError, "Unable to retrieve metadata for %s", srcPID)
 		return
 	}
