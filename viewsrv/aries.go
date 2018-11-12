@@ -48,6 +48,16 @@ func ariesLookup(c *gin.Context) {
 	}
 
 	// Not an image... see if it is WSLS
+	_, err := getApolloWSLSMetadata(passedPID)
+	if err == nil {
+		publicURL := fmt.Sprintf("https://%s/wsls/%s", config.dovHost, passedPID)
+		out.AccessURL = append(out.AccessURL, publicURL)
+		oEmbedURL := fmt.Sprintf("https://%s/oembed?url=%s", config.dovHost, url.QueryEscape(publicURL))
+		svc := AriesService{URL: oEmbedURL, Protocol: "oembed"}
+		out.Services = append(out.Services, svc)
+		c.JSON(http.StatusOK, out)
+		return
+	}
 
 	c.String(http.StatusNotFound, "%s not found", passedPID)
 }

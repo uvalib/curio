@@ -13,8 +13,8 @@ func wslsHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	wslsData, parseErr := getApolloWSLSMetadata(srcPID)
 	if parseErr != nil {
-		log.Printf("ERROR: Unable to get Apollo response for %s: %s", srcPID, parseErr.Error())
-		c.String(http.StatusInternalServerError, "Unable to retrieve metadata for %s", srcPID)
+		log.Printf("Unable to get Apollo response for %s: %s", srcPID, parseErr.Error())
+		c.String(http.StatusNotFound, "%s not found", srcPID)
 		return
 	}
 
