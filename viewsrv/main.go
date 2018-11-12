@@ -49,6 +49,11 @@ func main() {
 	router.GET("/images/:pid", imagesHandler)
 	router.GET("/wsls/:pid", wslsHandler)
 	router.GET("/oembed", oEmbedHandler)
+	api := router.Group("/api")
+	{
+		api.GET("/aries", ariesPing)
+		api.GET("/aries/:id", ariesLookup)
+	}
 
 	portStr := fmt.Sprintf(":%d", config.port)
 	log.Printf("Start HTTP service on port %s with CORS support enabled", portStr)
