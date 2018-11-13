@@ -1,5 +1,1 @@
-<div class="uv" data-uri="{{.SourceURI}}" data-canvasindex="{{.StartPage}}" style="background:black;width:{{.Width}}px; height:{{.Height}}px;">
-  <h1 style="color: #999;text-align: center;padding: 30% 0;">Loading...</h1>
-</div>
-<script type="text/javascript" id="embedUV" src="{{.Scheme}}://{{.EmbedHost}}/web/viewer/lib/embed.js">
-</script>
+<iframe src="{{.Scheme}}://{{.EmbedHost}}/images/uv/uv.html#?manifest={{.SourceURI}}" style="background:black;" width="{{.Width}}" height="{{.Height}}" allowfullscreen frameborder="0"></iframe>

@@ -43,9 +43,11 @@ func main() {
 	// Set routes and start server
 	router.Use(cors.Default())
 	router.GET("/", versionHandler)
+	router.GET("/favicon.ico", faviconHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
-	router.Use(static.Serve("/web", static.LocalFile("./web", true)))
+	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
+	router.Use(static.Serve("/images/uv", static.LocalFile("./web/uv", true)))
 	router.GET("/images/:pid", imagesHandler)
 	router.GET("/wsls/:pid", wslsHandler)
 	router.GET("/oembed", oEmbedHandler)
@@ -99,4 +101,8 @@ func getConfiguration() {
 // Handle a request for / and return version info
 func versionHandler(c *gin.Context) {
 	c.String(http.StatusOK, "Digital Object Viewer version %s", Version)
+}
+
+// faviconHandler is a dummy handler to silence browser API requests that look for /favicon.ico
+func faviconHandler(c *gin.Context) {
 }

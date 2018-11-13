@@ -99,8 +99,9 @@ func oEmbedHandler(c *gin.Context) {
 
 	// See what type of resource is being requested
 	var respData oembed
+	https := c.Request.TLS != nil
 	if resourceType == "images" {
-		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight)
+		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight, https)
 	} else if resourceType == "wsls" {
 		respData, err = getWSLSData(parsedURL, pid, maxWidth, maxHeight)
 	} else {
@@ -122,7 +123,7 @@ func oEmbedHandler(c *gin.Context) {
 	}
 }
 
-func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
+func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, https bool) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.dovHost
@@ -150,7 +151,7 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oem
 
 	// scheme / host for UV javascript
 	imgData.Scheme = "http"
-	if strings.Contains(imgData.SourceURI, "https") {
+	if https {
 		imgData.Scheme = "https"
 	}
 
