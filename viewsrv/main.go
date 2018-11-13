@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the service
-const Version = "1.6.0"
+const Version = "2.0.0"
 
 type configData struct {
 	port        int
@@ -47,9 +47,8 @@ func main() {
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
 	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
-	router.Use(static.Serve("/images/uv", static.LocalFile("./web/uv", true)))
-	router.GET("/images/:pid", imagesHandler)
-	router.GET("/wsls/:pid", wslsHandler)
+	router.Use(static.Serve("/view/uv", static.LocalFile("./web/uv", true)))
+	router.GET("/view/:pid", viewHandler)
 	router.GET("/oembed", oEmbedHandler)
 	api := router.Group("/api")
 	{

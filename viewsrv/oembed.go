@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -78,52 +77,53 @@ func oEmbedHandler(c *gin.Context) {
 		return
 	}
 
-	// The raw URL requested must be of the expected format: [http|https]://[host]/[images|wsls]/[PID][?page=n]
+	// The raw URL requested must be of the expected format: [http|https]://[host]/view/[PID][?page=n]
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid URL: %s", err.Error())
 		return
 	}
 
-	// Now split out relatve path to find PID. This should be something like: /[images|wsls]/[PID]
-	// NOTE: that this wil strip out all query params
+	// Now split out relatve path to find PID. This should be something like: /view/[PID]
+	// NOTE: parsedURL.Path will strip out all query params
 	relPath := parsedURL.Path
 	bits := strings.Split(relPath, "/")
-	if len(bits) != 3 {
-		c.String(http.StatusBadRequest, "Invalid URL in request: %s", urlStr)
+	pid := bits[len(bits)-1]
+
+	// See what type of resource is being requested: IIIF?
+	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, pid)
+	if isManifestViewable(iiifURL) {
+		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight, c.Request.TLS != nil)
+		renderResponse(c, respFormat, respData, err)
 		return
 	}
 
-	pid := bits[2]
-	resourceType := bits[1]
-
-	// See what type of resource is being requested
-	var respData oembed
-	https := c.Request.TLS != nil
-	if resourceType == "images" {
-		respData, err = getImageData(parsedURL, pid, maxWidth, maxHeight, https)
-	} else if resourceType == "wsls" {
-		respData, err = getWSLSData(parsedURL, pid, maxWidth, maxHeight)
-	} else {
-		err = fmt.Errorf("invalid resource type: %s", bits[1])
+	// Nope; try Apollo WSLS:
+	wslsData, err := getApolloWSLSMetadata(pid)
+	if err == nil {
+		respData, err := getWSLSOEmbedData(parsedURL, wslsData, maxWidth, maxHeight)
+		renderResponse(c, respFormat, respData, err)
+		return
 	}
 
+	// Nope: fail
+	c.String(http.StatusNotExtended, "resource not found")
+}
+
+func renderResponse(c *gin.Context, fmt string, oembed oembed, err error) {
 	if err != nil {
-		log.Printf("ERROR: Unable to render oEmbed response: %s", err.Error())
-		c.String(http.StatusInternalServerError, "Unable to render oEmbed response: %s", err.Error())
-		return
-	}
-
-	if respFormat == "json" {
-		log.Printf("Rendering JSON output")
-		c.Header("content-type", "application/json; charset=utf-8")
-		c.String(http.StatusOK, respData.marshalJSON())
+		c.String(http.StatusInternalServerError, err.Error())
 	} else {
-		c.XML(http.StatusOK, respData)
+		if fmt == "json" {
+			c.Header("content-type", "application/json; charset=utf-8")
+			c.String(http.StatusOK, oembed.marshalJSON())
+		} else {
+			c.XML(http.StatusOK, oembed)
+		}
 	}
 }
 
-func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, https bool) (oembed, error) {
+func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, https bool) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.dovHost
@@ -141,12 +141,6 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, http
 	if imgData.StartPage > 0 {
 		imgData.StartPage--
 		log.Printf("Requested starting page index %d", imgData.StartPage)
-	}
-
-	// Validate that the manifest has images
-	if isManifestViewable(imgData.SourceURI) == false {
-		log.Printf("Requested URL %s has no visible images", imgData.SourceURI)
-		return respData, errors.New("requested resource is not available")
 	}
 
 	// scheme / host for UV javascript
@@ -188,7 +182,7 @@ func getImageData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, http
 	return respData, nil
 }
 
-func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
+func getWSLSOEmbedData(tgtURL *url.URL, wslsData *wslsMetadata, maxWidth int, maxHeight int) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var snipData embedWSLSData
 
@@ -211,10 +205,6 @@ func getWSLSData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oemb
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	wslsData, parseErr := getApolloWSLSMetadata(pid)
-	if parseErr != nil {
-		return respData, parseErr
-	}
 	respData.Title = wslsData.Title
 	respData.HTML = rawHTML
 	respData.Width = snipData.Width
