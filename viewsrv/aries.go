@@ -37,7 +37,7 @@ func ariesLookup(c *gin.Context) {
 	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, passedPID)
 	if isManifestViewable(iiifURL) {
 		// yes; this is an image asset. Return the oEbmed and viewer URLs
-		publicURL := fmt.Sprintf("https://%s/images/%s", config.dovHost, passedPID)
+		publicURL := fmt.Sprintf("https://%s/view/%s", config.dovHost, passedPID)
 		oEmbedURL := fmt.Sprintf("https://%s/oembed?url=%s", config.dovHost, url.QueryEscape(publicURL))
 		svc := AriesService{URL: oEmbedURL, Protocol: "oembed"}
 		out.AccessURL = append(out.AccessURL, publicURL)
@@ -50,7 +50,7 @@ func ariesLookup(c *gin.Context) {
 	// Not an image... see if it is WSLS
 	_, err := getApolloWSLSMetadata(passedPID)
 	if err == nil {
-		publicURL := fmt.Sprintf("https://%s/wsls/%s", config.dovHost, passedPID)
+		publicURL := fmt.Sprintf("https://%s/view/%s", config.dovHost, passedPID)
 		out.AccessURL = append(out.AccessURL, publicURL)
 		oEmbedURL := fmt.Sprintf("https://%s/oembed?url=%s", config.dovHost, url.QueryEscape(publicURL))
 		svc := AriesService{URL: oEmbedURL, Protocol: "oembed"}
