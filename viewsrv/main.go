@@ -21,7 +21,7 @@ type configData struct {
 	apolloURL   string
 	iiifURL     string
 	fedoraURL   string
-	dovHost     string
+	hostname    string
 }
 
 // golbals for DB and CFG
@@ -72,7 +72,7 @@ func getConfiguration() {
 		defApolloURL = "https://apollo.lib.virginia.edu/api"
 	}
 
-	defIIIFURL := os.Getenv("DOV_IIIF_MAN_URL")
+	defIIIFURL := os.Getenv("CURIO_IIIF_MAN_URL")
 	if defIIIFURL == "" {
 		defIIIFURL = "https://iiifman.lib.virginia.edu/pid"
 	}
@@ -82,9 +82,9 @@ func getConfiguration() {
 		defFedoraURL = "http://fedora01.lib.virginia.edu/wsls"
 	}
 
-	defHost := os.Getenv("DOV_HOST")
+	defHost := os.Getenv("CURIO_HOST")
 	if defHost == "" {
-		defHost = "doviewer.lib.virginia.edu"
+		defHost = "curio.lib.virginia.edu"
 	}
 
 	// FIRST, try command line flags. Fallback is ENV variables
@@ -93,7 +93,7 @@ func getConfiguration() {
 	flag.StringVar(&config.apolloURL, "apollo", defApolloURL, "Apollo URL")
 	flag.StringVar(&config.iiifURL, "iiif", defIIIFURL, "IIIF Manifest URL")
 	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
-	flag.StringVar(&config.dovHost, "dovhost", defHost, "Curio Hostname")
+	flag.StringVar(&config.hostname, "host", defHost, "Curio Hostname")
 	flag.Parse()
 }
 

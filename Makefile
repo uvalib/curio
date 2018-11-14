@@ -3,7 +3,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 
-BASE_NAME=digital-object-viewer
+BASE_NAME=curio
 
 build: darwin copy-web
 

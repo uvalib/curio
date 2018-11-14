@@ -125,7 +125,7 @@ func renderResponse(c *gin.Context, fmt string, oembed oembed, err error) {
 func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
-	imgData.EmbedHost = config.dovHost
+	imgData.EmbedHost = config.hostname
 	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
 
 	// Get page param if any...
