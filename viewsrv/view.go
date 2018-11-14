@@ -22,14 +22,18 @@ type viewerData struct {
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, srcPID)
+	log.Printf("Check image at %s", iiifURL)
 	if isManifestViewable(iiifURL) {
+		log.Printf("Render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return
 	}
 
 	// not an image; try Apollo for WSLS...
+	log.Printf("%s is not image; check WSLS", srcPID)
 	wslsData, err := getApolloWSLSMetadata(srcPID)
 	if err == nil {
+		log.Printf("Render %s as WSLS", srcPID)
 		viewWSLS(c, wslsData)
 		return
 	}
