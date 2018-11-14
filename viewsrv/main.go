@@ -29,7 +29,7 @@ var config configData
 
 func main() {
 	// Load cfg
-	log.Printf("===> Digital Object Viewer staring up <===")
+	log.Printf("===> Curio is staring up <===")
 	getConfiguration()
 
 	// Set routes and start server
@@ -93,13 +93,13 @@ func getConfiguration() {
 	flag.StringVar(&config.apolloURL, "apollo", defApolloURL, "Apollo URL")
 	flag.StringVar(&config.iiifURL, "iiif", defIIIFURL, "IIIF Manifest URL")
 	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
-	flag.StringVar(&config.dovHost, "dovhost", defHost, "DoViewer Hostname")
+	flag.StringVar(&config.dovHost, "dovhost", defHost, "Curio Hostname")
 	flag.Parse()
 }
 
 // Handle a request for / and return version info
 func versionHandler(c *gin.Context) {
-	c.String(http.StatusOK, "Digital Object Viewer version %s", Version)
+	c.String(http.StatusOK, "Curio version %s", Version)
 }
 
 // faviconHandler is a dummy handler to silence browser API requests that look for /favicon.ico
