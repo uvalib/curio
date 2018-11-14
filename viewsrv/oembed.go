@@ -41,7 +41,6 @@ type embedImageData struct {
 	Width     int
 	Height    int
 	SourceURI string
-	Scheme    string
 	EmbedHost string
 	StartPage int
 }
@@ -93,7 +92,7 @@ func oEmbedHandler(c *gin.Context) {
 	// See what type of resource is being requested: IIIF?
 	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, pid)
 	if isManifestViewable(iiifURL) {
-		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight, c.Request.TLS != nil)
+		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight)
 		renderResponse(c, respFormat, respData, err)
 		return
 	}
@@ -123,7 +122,7 @@ func renderResponse(c *gin.Context, fmt string, oembed oembed, err error) {
 	}
 }
 
-func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int, https bool) (oembed, error) {
+func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.dovHost
@@ -141,12 +140,6 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	if imgData.StartPage > 0 {
 		imgData.StartPage--
 		log.Printf("Requested starting page index %d", imgData.StartPage)
-	}
-
-	// scheme / host for UV javascript
-	imgData.Scheme = "http"
-	if https {
-		imgData.Scheme = "https"
 	}
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
