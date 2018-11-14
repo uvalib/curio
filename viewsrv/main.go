@@ -57,7 +57,7 @@ func main() {
 	}
 
 	portStr := fmt.Sprintf(":%d", config.port)
-	log.Printf("Start HTTP service on port %s with CORS support enabled", portStr)
+	log.Printf("Start Curio on port %s with CORS support enabled", portStr)
 	log.Fatal(router.Run(portStr))
 }
 

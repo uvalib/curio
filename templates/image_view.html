@@ -18,8 +18,10 @@
         window.addEventListener('uvLoaded', function (e) {
             createUV('#uv', {
                 embedded: true,
+                configUri: '/public/uv.json',
                 canvasIndex: '{{.StartPage}}',
                 iiifResourceUri: '{{.URI}}',
+                locales: [{name: 'en-GB'}]
             }, new UV.URLDataProvider());
         }, false);
     </script>
