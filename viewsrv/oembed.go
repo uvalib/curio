@@ -76,7 +76,7 @@ func oEmbedHandler(c *gin.Context) {
 		return
 	}
 
-	// The raw URL requested must be of the expected format: [http|https]://[host]/view/[PID][?page=n]
+	// The raw URL requested must be of the expected format: [http|https]://[host]/view/[PID][?page=n][&unit=id]
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Invalid URL: %s", err.Error())
@@ -91,6 +91,10 @@ func oEmbedHandler(c *gin.Context) {
 
 	// See what type of resource is being requested: IIIF?
 	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, pid)
+	unitID := parsedURL.Query().Get("unit")
+	if unitID != "" {
+		iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+	}
 	if isManifestViewable(iiifURL) {
 		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight)
 		renderResponse(c, respFormat, respData, err)
@@ -128,12 +132,8 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	imgData.EmbedHost = config.hostname
 	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
 
-	// Get page param if any...
-	qp, _ := url.ParseQuery(tgtURL.RawQuery)
-	imgData.StartPage = 0
-	if len(qp["page"]) > 0 {
-		imgData.StartPage, _ = strconv.Atoi(qp["page"][0])
-	}
+	// Get page param. ATOI will return 0 for an empty string or invalid value
+	imgData.StartPage, _ = strconv.Atoi(tgtURL.Query().Get("page"))
 
 	// accept 1 based page numbers from client, but use
 	// 0-based canvas index in UV embed snippet

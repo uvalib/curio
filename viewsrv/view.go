@@ -21,7 +21,11 @@ type viewerData struct {
 // hands the rendering off to the appropriate handler - or returns 404
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
+	unitID := c.Query("unit")
 	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, srcPID)
+	if unitID != "" {
+		iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+	}
 	log.Printf("Check image at %s", iiifURL)
 	if isManifestViewable(iiifURL) {
 		log.Printf("Render %s as image", srcPID)
