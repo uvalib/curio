@@ -132,6 +132,12 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	imgData.EmbedHost = config.hostname
 	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
 
+	// Pull unit param and add it to IIIF query if present
+	unitID := tgtURL.Query().Get("unit")
+	if unitID != "" {
+		imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
+	}
+
 	// Get page param. ATOI will return 0 for an empty string or invalid value
 	imgData.StartPage, _ = strconv.Atoi(tgtURL.Query().Get("page"))
 
