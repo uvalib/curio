@@ -24,7 +24,7 @@ type Aries struct {
 // AriesPing handles requests to the aries endpoint with no params.
 // Just returns and alive message
 func ariesPing(c *gin.Context) {
-	c.String(http.StatusOK, "Apollo Aries API")
+	c.String(http.StatusOK, "Curio Aries API")
 }
 
 // AriesLookup will query apollo for information on the supplied identifer
