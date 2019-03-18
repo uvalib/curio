@@ -90,12 +90,7 @@ func oEmbedHandler(c *gin.Context) {
 	pid := bits[len(bits)-1]
 
 	// See what type of resource is being requested: IIIF?
-	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, pid)
-	unitID := parsedURL.Query().Get("unit")
-	if unitID != "" {
-		iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-	}
-	if isManifestViewable(iiifURL) {
+	if isIiifCandidate(pid) {
 		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight)
 		renderResponse(c, respFormat, respData, err)
 		return

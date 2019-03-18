@@ -34,8 +34,7 @@ func ariesLookup(c *gin.Context) {
 	out.Identifiers = append(out.Identifiers, passedPID)
 
 	// easy check; see if there is an IIIF manifest with this PID visible
-	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, passedPID)
-	if isManifestViewable(iiifURL) {
+	if isIiifCandidate(passedPID) {
 		// yes; this is an image asset. Return the oEbmed and viewer URLs
 		publicURL := fmt.Sprintf("https://%s/view/%s", config.hostname, passedPID)
 		oEmbedURL := fmt.Sprintf("https://%s/oembed?url=%s", config.hostname, url.QueryEscape(publicURL))

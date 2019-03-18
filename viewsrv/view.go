@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,13 +19,12 @@ type viewerData struct {
 // hands the rendering off to the appropriate handler - or returns 404
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
-	unitID := c.Query("unit")
-	iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, srcPID)
-	if unitID != "" {
-		iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-	}
-	log.Printf("Check image at %s", iiifURL)
-	if isManifestViewable(iiifURL) {
+	if isIiifCandidate(srcPID) {
+		unitID := c.Query("unit")
+		iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, srcPID)
+		if unitID != "" {
+			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+		}
 		log.Printf("Render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return
@@ -78,24 +75,22 @@ func viewWSLS(c *gin.Context, wslsData *wslsMetadata) {
 }
 
 // Hit the target IIIF manifest URL and see if it contains any images
-func isManifestViewable(url string) bool {
+func isIiifCandidate(pid string) bool {
+	log.Printf("Check if %s is a candidate for IIIF metadata...", pid)
 	timeout := time.Duration(10 * time.Second)
 	client := http.Client{
 		Timeout: timeout,
 	}
-	log.Printf("Checking manifest URL %s for images", url)
-	resp, err := client.Get(url)
+	resp, err := client.Get(fmt.Sprintf("%s/%s/exist", config.iiifURL, pid))
 	if err != nil {
-		log.Printf("ERROR: IIIF URL: %s failed to return a response", url)
+		log.Printf("ERROR: IIIF exist returned an error: %s", err.Error())
 		return false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR: IIIF URL: %s returned non-success status: %d", url, resp.StatusCode)
+		log.Printf("ERROR: IIIF exist returned non-success status: %d", resp.StatusCode)
 		return false
 	}
-	bytes, _ := ioutil.ReadAll(resp.Body)
-	respStr := string(bytes)
-
-	return strings.Contains(respStr, "dcTypes:Image")
+	log.Printf("PID %s has an IIIF manifest", pid)
+	return true
 }
