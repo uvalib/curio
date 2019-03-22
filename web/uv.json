@@ -1,6 +1,6 @@
 {
    "options": {
-      "dropEnabled": true,
+      "dropEnabled": false,
       "footerPanelEnabled": true,
       "headerPanelEnabled": true,
       "leftPanelEnabled": true
@@ -13,11 +13,17 @@
             "settingsButtonEnabled": true
          }
       },
+      "resourcesLeftPanel": {
+         "options": {
+            "expandFullEnabled": false,
+            "panelOpen": true
+         }
+      },
       "pagingHeaderPanel": {
          "options": {
            "autoCompleteBoxEnabled": true,
            "autocompleteAllowWords": false,
-           "galleryButtonEnabled": false,
+           "galleryButtonEnabled": true,
            "imageSelectionBoxEnabled": false,
            "pageModeEnabled": false,
            "pagingToggleEnabled": true
@@ -27,7 +33,7 @@
          "options": {
             "autocompleteAllowWords": false,
             "bookmarkEnabled": false,
-            "downloadEnabled": false,
+            "downloadEnabled": true,
             "embedEnabled": false,
             "feedbackEnabled": false,
             "fullscreenEnabled": true,
@@ -35,8 +41,13 @@
             "moreInfoEnabled": true,
             "openEnabled": false,
             "printEnabled": false,
-            "shareEnabled": true
+            "shareEnabled": false
          }
       }
-   }
+   },
+   "seadragonCenterPanel": {
+      "options": {
+        "autoHideControls": true
+      }
+    }
 }
