@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -41,24 +40,23 @@ func healthCheckHandler(c *gin.Context) {
 
 	// make sure IIIF manifest service is alive
 	log.Printf("Checking IIIF...")
-	url = fmt.Sprintf("%s/version", config.iiifURL)
-	log.Printf("IIIF test URL: %s", url)
+	log.Printf("IIIF test URL: %s", config.iiifURL)
 	iiifStatus := true
 	resp, err = client.Get(config.iiifURL)
 	if err != nil {
 		log.Printf("ERROR: IIIF service (%s)", err)
 		iiifStatus = false
 	} else {
-		b, err := ioutil.ReadAll(resp.Body)
+		_, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("ERROR: IIIF service (%s)", err)
 			iiifStatus = false
-		} else {
-			resp.Body.Close()
-			if strings.Contains(string(b), "IIIF metadata service") == false {
-				log.Printf("ERROR: IIIF service reports unexpected version info (%s)", string(b))
-				iiifStatus = false
-			}
+		//} else {
+		//	resp.Body.Close()
+		//	if strings.Contains(string(b), "IIIF metadata service") == false {
+		//		log.Printf("ERROR: IIIF service reports unexpected version info (%s)", string(b)
+		//		iiifStatus = false
+		//	}
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"alive": true, "iiif": iiifStatus, "tracksys": tsStatus})
