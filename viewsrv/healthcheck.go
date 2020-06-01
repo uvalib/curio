@@ -41,6 +41,8 @@ func healthCheckHandler(c *gin.Context) {
 
 	// make sure IIIF manifest service is alive
 	log.Printf("Checking IIIF...")
+	url = fmt.Sprintf("%s/version", config.iiifURL)
+	log.Printf("IIIF test URL: %s", url)
 	iiifStatus := true
 	resp, err = client.Get(config.iiifURL)
 	if err != nil {
@@ -54,6 +56,7 @@ func healthCheckHandler(c *gin.Context) {
 		} else {
 			resp.Body.Close()
 			if strings.Contains(string(b), "IIIF metadata service") == false {
+				log.Printf("ERROR: IIIF service reports unexpected version info (%s)", string(b))
 				iiifStatus = false
 			}
 		}
