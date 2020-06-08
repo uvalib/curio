@@ -2,6 +2,8 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
+GOGET = $(GOCMD) get
+GOMOD = $(GOCMD) mod
 
 BASE_NAME=curio
 
@@ -28,3 +30,8 @@ copy-web:
 
 clean:
 	rm -rf bin
+
+dep:
+	$(GOGET) -u ./viewsrv/...
+	$(GOMOD) tidy
+	$(GOMOD) verify
