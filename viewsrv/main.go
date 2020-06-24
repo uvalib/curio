@@ -79,7 +79,7 @@ func getConfiguration() {
 
 	defFedoraURL := os.Getenv("WSLS_FEDORA_URL")
 	if defFedoraURL == "" {
-		defFedoraURL = "http://fedora01.lib.virginia.edu/wsls"
+		defFedoraURL = "http://wsls.lib.virginia.edu"
 	}
 
 	defHost := os.Getenv("CURIO_HOST")
