@@ -15,3 +15,5 @@ env.*
 web/test.html
 info.txt
 run.sh
+/scripts
+buildtag.*
