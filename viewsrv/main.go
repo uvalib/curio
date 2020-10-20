@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/static"
@@ -99,7 +101,19 @@ func getConfiguration() {
 
 // Handle a request for / and return version info
 func versionHandler(c *gin.Context) {
-	c.String(http.StatusOK, "Curio version %s", Version)
+
+	build := "unknown"
+
+	// cos our CWD is the bin directory
+	files, _ := filepath.Glob("../buildtag.*")
+	if len(files) == 1 {
+		build = strings.Replace(files[0], "../buildtag.", "", 1)
+	}
+
+	vMap := make(map[string]string)
+	vMap["version"] = Version
+	vMap["build"] = build
+	c.JSON(http.StatusOK, vMap)
 }
 
 // faviconHandler is a dummy handler to silence browser API requests that look for /favicon.ico
