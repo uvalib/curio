@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 type viewerData struct {
@@ -21,20 +19,20 @@ func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	if isIiifCandidate(srcPID) {
 		unitID := c.Query("unit")
-		iiifURL := fmt.Sprintf("%s/%s", config.iiifURL, srcPID)
+		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
 		if unitID != "" {
 			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
 		}
-		log.Printf("Render %s as image", srcPID)
+		log.Printf("INFO: render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return
 	}
 
 	// not an image; try Apollo for WSLS...
-	log.Printf("%s is not image; check WSLS", srcPID)
+	log.Printf("INFO: %s is not image; check WSLS", srcPID)
 	wslsData, err := getApolloWSLSMetadata(srcPID)
 	if err == nil {
-		log.Printf("Render %s as WSLS", srcPID)
+		log.Printf("INFO: render %s as WSLS", srcPID)
 		viewWSLS(c, wslsData)
 		return
 	}
@@ -76,21 +74,17 @@ func viewWSLS(c *gin.Context, wslsData *wslsMetadata) {
 
 // Hit the target IIIF manifest URL and see if it contains any images
 func isIiifCandidate(pid string) bool {
-	log.Printf("Check if %s is a candidate for IIIF metadata...", pid)
-	timeout := time.Duration(10 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-	resp, err := client.Get(fmt.Sprintf("%s/%s/exist", config.iiifURL, pid))
+
+	log.Printf("INFO: check if %s is a candidate for IIIF metadata...", pid)
+	url := fmt.Sprintf("%s/pid/%s/exist", config.iiifURL, pid)
+	_, err := getAPIResponse( url )
 	if err != nil {
-		log.Printf("ERROR: IIIF exist returned an error: %s", err.Error())
 		return false
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR: IIIF exist returned non-success status: %d", resp.StatusCode)
-		return false
-	}
-	log.Printf("PID %s has an IIIF manifest", pid)
+	log.Printf("INFO: PID %s has an IIIF manifest", pid)
 	return true
 }
+
+//
+// end of file
+//

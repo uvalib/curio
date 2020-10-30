@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net"
 	"net/http"
 	"time"
 )
@@ -45,20 +47,23 @@ type wslsMetadata struct {
 	Duration      string
 }
 
-// getAPIResponse calls a JSON endpoint and returns the resoponce
+// use a shared client, 5 second connect, 15 second read timeout
+var httpClient = httpClientWithTimeouts( 5, 15 )
+
+// getAPIResponse calls a JSON endpoint and returns the response
 func getAPIResponse(url string) (string, error) {
-	timeout := time.Duration(5 * time.Second)
-	client := http.Client{
-		Timeout: timeout,
-	}
-	resp, err := client.Get(url)
+
+	log.Printf("INFO: GET %s", url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
+		log.Printf("ERROR: %s returns %s", url, err.Error())
 		return "", err
 	}
 	defer resp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	respString := string(bodyBytes)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("ERROR: %s returns %s", url, respString)
 		return "", errors.New(respString)
 	}
 	return respString, nil
@@ -103,7 +108,8 @@ func getTracksysMetadata(pid string) (*tracksysMetadata, error) {
 	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, pid)
 	jsonResp, err := getAPIResponse(metadataURL)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
+		//return nil, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
+		return nil, err
 	}
 
 	var jsonMap map[string]interface{}
@@ -113,3 +119,25 @@ func getTracksysMetadata(pid string) (*tracksysMetadata, error) {
 	data.Author, _ = jsonMap["creator"].(string)
 	return &data, nil
 }
+
+func httpClientWithTimeouts(connTimeout int, readTimeout int ) *http.Client {
+
+	client := &http.Client{
+		Timeout: time.Duration(readTimeout) * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   time.Duration(connTimeout) * time.Second,
+				KeepAlive: 60 * time.Second,
+			}).DialContext,
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	}
+
+	return client
+}
+
+//
+// end of file
+//

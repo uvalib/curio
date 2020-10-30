@@ -125,7 +125,7 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.hostname
-	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifURL, pid)
+	imgData.SourceURI = fmt.Sprintf("%s/pid/%s", config.iiifURL, pid)
 
 	// Pull unit param and add it to IIIF query if present
 	unitID := tgtURL.Query().Get("unit")
@@ -140,7 +140,7 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	// 0-based canvas index in UV embed snippet
 	if imgData.StartPage > 0 {
 		imgData.StartPage--
-		log.Printf("Requested starting page index %d", imgData.StartPage)
+		log.Printf("INFO: requested starting page index %d", imgData.StartPage)
 	}
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
@@ -154,7 +154,7 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	}
 
 	// Render the <div> that will be included in the response, and used to embed the resource
-	log.Printf("Rendering html snippet...")
+	log.Printf("INFO: rendering html snippet...")
 	var renderedSnip bytes.Buffer
 	snippet := template.Must(template.ParseFiles("templates/image_embed.html"))
 	snipErr := snippet.Execute(&renderedSnip, imgData)
@@ -190,7 +190,7 @@ func getWSLSOEmbedData(tgtURL *url.URL, wslsData *wslsMetadata, maxWidth int, ma
 		snipData.Height = maxHeight
 	}
 
-	log.Printf("Rendering html snippet...")
+	log.Printf("INFO: rendering html snippet...")
 	var renderedSnip bytes.Buffer
 	snippet := template.Must(template.ParseFiles("templates/wsls_embed.html"))
 	snipErr := snippet.Execute(&renderedSnip, snipData)

@@ -59,7 +59,7 @@ func main() {
 	}
 
 	portStr := fmt.Sprintf(":%d", config.port)
-	log.Printf("Start Curio on port %s with CORS support enabled", portStr)
+	log.Printf("INFO: start Curio on port %s with CORS support enabled", portStr)
 	log.Fatal(router.Run(portStr))
 }
 
@@ -76,7 +76,7 @@ func getConfiguration() {
 
 	defIIIFURL := os.Getenv("CURIO_IIIF_MAN_URL")
 	if defIIIFURL == "" {
-		defIIIFURL = "https://iiifman.lib.virginia.edu/pid"
+		defIIIFURL = "https://iiifman.lib.virginia.edu"
 	}
 
 	defFedoraURL := os.Getenv("WSLS_FEDORA_URL")
@@ -97,6 +97,13 @@ func getConfiguration() {
 	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
 	flag.StringVar(&config.hostname, "host", defHost, "Curio Hostname")
 	flag.Parse()
+
+	log.Printf("[CONFIG] port        = [%d]", config.port)
+	log.Printf("[CONFIG] tracksysURL = [%s]", config.tracksysURL)
+	log.Printf("[CONFIG] apolloURL   = [%s]", config.apolloURL)
+	log.Printf("[CONFIG] iiifURL     = [%s]", config.iiifURL)
+	log.Printf("[CONFIG] fedoraURL   = [%s]", config.fedoraURL)
+	log.Printf("[CONFIG] hostname    = [%s]", config.hostname)
 }
 
 // Handle a request for / and return version info
