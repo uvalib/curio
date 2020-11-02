@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type viewerData struct {
@@ -19,10 +20,11 @@ func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	if isIiifCandidate(srcPID) {
 		unitID := c.Query("unit")
-		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
-		if unitID != "" {
-			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-		}
+//		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
+//		if unitID != "" {
+//			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+//		}
+		iiifURL := fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName( "pid", srcPID, unitID ))
 		log.Printf("INFO: render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return
@@ -43,6 +45,7 @@ func viewHandler(c *gin.Context) {
 
 // viewImage displays a series of images in the universalViewer
 func viewImage(c *gin.Context, iiifURL string) {
+	log.Printf("INFO: using iiif manifest %s", iiifURL)
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil {
 		page = 1
@@ -83,6 +86,19 @@ func isIiifCandidate(pid string) bool {
 	}
 	log.Printf("INFO: PID %s has an IIIF manifest", pid)
 	return true
+}
+
+// normalize the manifest name so we can use the manifest from S3
+func normalizeManifestName( path string, pid string, unit string ) string {
+	name := fmt.Sprintf("%s-%s", path, pid)
+	if len(unit) != 0 {
+		name = fmt.Sprintf("%s-%s", name, unit)
+	}
+	// cleanup any special characters
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, ":", "-")
+
+	return name
 }
 
 //

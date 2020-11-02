@@ -125,7 +125,8 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.hostname
-	imgData.SourceURI = fmt.Sprintf("%s/pid/%s", config.iiifURL, pid)
+	//imgData.SourceURI = fmt.Sprintf("%s/pid/%s", config.iiifURL, pid)
+	imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", pid, ""))
 
 	// Pull unit param and add it to IIIF query if present
 	unitID := tgtURL.Query().Get("unit")
