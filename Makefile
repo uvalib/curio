@@ -2,8 +2,10 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
+GOFMT = $(GOCMD) fmt
 GOGET = $(GOCMD) get
 GOMOD = $(GOCMD) mod
+GOVET = $(GOCMD) vet
 
 BASE_NAME=curio
 
@@ -30,6 +32,12 @@ copy-web:
 
 clean:
 	rm -rf bin
+
+fmt:
+	cd viewsrv; $(GOFMT)
+
+vet:
+	cd viewsrv; $(GOVET)
 
 dep:
 	$(GOGET) -u ./viewsrv/...

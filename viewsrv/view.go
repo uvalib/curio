@@ -20,11 +20,11 @@ func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	if isIiifCandidate(srcPID) {
 		unitID := c.Query("unit")
-//		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
-//		if unitID != "" {
-//			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-//		}
-		iiifURL := fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName( "pid", srcPID, unitID ))
+		//		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
+		//		if unitID != "" {
+		//			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+		//		}
+		iiifURL := fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", srcPID, unitID))
 		log.Printf("INFO: render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return
@@ -80,7 +80,7 @@ func isIiifCandidate(pid string) bool {
 
 	log.Printf("INFO: check if %s is a candidate for IIIF metadata...", pid)
 	url := fmt.Sprintf("%s/pid/%s/exist", config.iiifURL, pid)
-	_, err := getAPIResponse( url )
+	_, err := getAPIResponse(url)
 	if err != nil {
 		return false
 	}
@@ -89,7 +89,7 @@ func isIiifCandidate(pid string) bool {
 }
 
 // normalize the manifest name so we can use the manifest from S3
-func normalizeManifestName( path string, pid string, unit string ) string {
+func normalizeManifestName(path string, pid string, unit string) string {
 	name := fmt.Sprintf("%s-%s", path, pid)
 	if len(unit) != 0 {
 		name = fmt.Sprintf("%s-%s", name, unit)
