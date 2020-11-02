@@ -48,7 +48,7 @@ type wslsMetadata struct {
 }
 
 // use a shared client, 5 second connect, 15 second read timeout
-var httpClient = httpClientWithTimeouts( 5, 15 )
+var httpClient = httpClientWithTimeouts(5, 15)
 
 // getAPIResponse calls a JSON endpoint and returns the response
 func getAPIResponse(url string) (string, error) {
@@ -63,7 +63,12 @@ func getAPIResponse(url string) (string, error) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	respString := string(bodyBytes)
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR: %s returns %s", url, respString)
+		logLevel := "ERROR"
+		// some errors are expected
+		if resp.StatusCode == http.StatusNotFound {
+			logLevel = "INFO"
+		}
+		log.Printf("%s: %s returns %s", logLevel, url, respString)
 		return "", errors.New(respString)
 	}
 	return respString, nil
@@ -120,7 +125,7 @@ func getTracksysMetadata(pid string) (*tracksysMetadata, error) {
 	return &data, nil
 }
 
-func httpClientWithTimeouts(connTimeout int, readTimeout int ) *http.Client {
+func httpClientWithTimeouts(connTimeout int, readTimeout int) *http.Client {
 
 	client := &http.Client{
 		Timeout: time.Duration(readTimeout) * time.Second,
