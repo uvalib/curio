@@ -30,8 +30,8 @@ func main() {
 
 	// Set routes and start server
 	router.Use(cors.Default())
+	router.StaticFile("/favicon.ico", "./web/favicon.ico")
 	router.GET("/", versionHandler)
-	router.GET("/favicon.ico", faviconHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
 	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
@@ -64,8 +64,4 @@ func versionHandler(c *gin.Context) {
 	vMap["version"] = Version
 	vMap["build"] = build
 	c.JSON(http.StatusOK, vMap)
-}
-
-// faviconHandler is a dummy handler to silence browser API requests that look for /favicon.ico
-func faviconHandler(c *gin.Context) {
 }

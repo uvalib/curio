@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type viewerData struct {
@@ -18,6 +19,7 @@ type viewerData struct {
 // hands the rendering off to the appropriate handler - or returns 404
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
+	log.Printf("VIEW PID %s", srcPID)
 	if isIiifCandidate(srcPID) {
 		unitID := c.Query("unit")
 		//		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
@@ -40,7 +42,7 @@ func viewHandler(c *gin.Context) {
 	}
 
 	// Nope; fail
-	c.String(http.StatusNotFound, "%s not found", srcPID)
+	c.HTML(http.StatusOK, "not_available.html", nil)
 }
 
 // viewImage displays a series of images in the universalViewer

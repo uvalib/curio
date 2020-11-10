@@ -11,3 +11,12 @@ It supports the following endpoints:
 
 ### System Requirements
 * GO version 1.11.0 or greater
+
+### Universal Viewer
+This appliclation relies on Universal Viewer (https://github.com/UniversalViewer/universalviewer) to view IIIF images.
+It currently uses version 3.1.1. To upgrade the viewer:
+
+* Go to the site above and download the desired tag
+* Move into the source directory and run `grunt build --dist`
+* Copy the `dist` directory into the curio source tree as `./web/uv`
+

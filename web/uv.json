@@ -3,14 +3,15 @@
       "dropEnabled": false,
       "footerPanelEnabled": true,
       "headerPanelEnabled": true,
-      "leftPanelEnabled": true
+      "leftPanelEnabled": true,
+      "rightPanelEnabled": false
    },
    "modules": {
       "headerPanel": {
          "options": {
             "centerOptionsEnabled": true,
             "localeToggleEnabled": false,
-            "settingsButtonEnabled": true
+            "settingsButtonEnabled": false
          }
       },
       "resourcesLeftPanel": {
@@ -38,16 +39,17 @@
             "feedbackEnabled": false,
             "fullscreenEnabled": true,
             "minimiseButtons": true,
-            "moreInfoEnabled": true,
+            "moreInfoEnabled": false,
             "openEnabled": false,
             "printEnabled": false,
-            "shareEnabled": false
+            "shareEnabled": true
          }
       }
    },
    "seadragonCenterPanel": {
       "options": {
-        "autoHideControls": true
+        "autoHideControls": true,
+        "attributionEnabled": false
       }
     }
 }
