@@ -22,11 +22,17 @@ func viewHandler(c *gin.Context) {
 	log.Printf("VIEW PID %s", srcPID)
 	if isIiifCandidate(srcPID) {
 		unitID := c.Query("unit")
-		//		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
-		//		if unitID != "" {
-		//			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-		//		}
-		iiifURL := fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", srcPID, unitID))
+
+		iiifURL := ""
+		if config.cacheDisabled {
+			log.Printf("INFO: IIIF cache is disabled, read manifest from IIIF service")
+			iiifURL = fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
+			if unitID != "" {
+				iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
+			}
+		} else {
+			iiifURL = fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", srcPID, unitID))
+		}
 		log.Printf("INFO: render %s as image", srcPID)
 		viewImage(c, iiifURL)
 		return

@@ -7,13 +7,14 @@ import (
 )
 
 type configData struct {
-	port        int
-	tracksysURL string
-	apolloURL   string
-	iiifURL     string
-	iiifRootURL string
-	fedoraURL   string
-	hostname    string
+	port          int
+	tracksysURL   string
+	apolloURL     string
+	iiifURL       string
+	iiifRootURL   string
+	cacheDisabled bool
+	fedoraURL     string
+	hostname      string
 }
 
 // globals for the CFG
@@ -59,15 +60,17 @@ func getConfiguration() {
 	flag.StringVar(&config.iiifRootURL, "iiifroot", defIIIFRootURL, "IIIF manifest root URL")
 	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
 	flag.StringVar(&config.hostname, "host", defHost, "Curio hostname")
+	flag.BoolVar(&config.cacheDisabled, "nocache", false, "Local dev mode flag to disable IIIF cache")
 	flag.Parse()
 
-	log.Printf("[CONFIG] port        = [%d]", config.port)
-	log.Printf("[CONFIG] tracksysURL = [%s]", config.tracksysURL)
-	log.Printf("[CONFIG] apolloURL   = [%s]", config.apolloURL)
-	log.Printf("[CONFIG] iiifURL     = [%s]", config.iiifURL)
-	log.Printf("[CONFIG] iiifRootURL = [%s]", config.iiifRootURL)
-	log.Printf("[CONFIG] fedoraURL   = [%s]", config.fedoraURL)
-	log.Printf("[CONFIG] hostname    = [%s]", config.hostname)
+	log.Printf("[CONFIG] port          = [%d]", config.port)
+	log.Printf("[CONFIG] tracksysURL   = [%s]", config.tracksysURL)
+	log.Printf("[CONFIG] apolloURL     = [%s]", config.apolloURL)
+	log.Printf("[CONFIG] iiifURL       = [%s]", config.iiifURL)
+	log.Printf("[CONFIG] iiifRootURL   = [%s]", config.iiifRootURL)
+	log.Printf("[CONFIG] cacheDisabled = [%t]", config.cacheDisabled)
+	log.Printf("[CONFIG] fedoraURL     = [%s]", config.fedoraURL)
+	log.Printf("[CONFIG] hostname      = [%s]", config.hostname)
 }
 
 //
