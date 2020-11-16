@@ -13,7 +13,7 @@ type configData struct {
 	iiifURL       string
 	iiifRootURL   string
 	cacheDisabled bool
-	fedoraURL     string
+	wslsURL       string
 	hostname      string
 }
 
@@ -44,7 +44,7 @@ func getConfiguration() {
 
 	defFedoraURL := os.Getenv("WSLS_FEDORA_URL")
 	if defFedoraURL == "" {
-		defFedoraURL = "http://wsls.lib.virginia.edu"
+		defFedoraURL = "https://wsls.lib.virginia.edu"
 	}
 
 	defHost := os.Getenv("CURIO_HOST")
@@ -58,7 +58,7 @@ func getConfiguration() {
 	flag.StringVar(&config.apolloURL, "apollo", defApolloURL, "Apollo URL")
 	flag.StringVar(&config.iiifURL, "iiif", defIIIFURL, "IIIF manifest URL")
 	flag.StringVar(&config.iiifRootURL, "iiifroot", defIIIFRootURL, "IIIF manifest root URL")
-	flag.StringVar(&config.fedoraURL, "fedora", defFedoraURL, "WSLS Fedora URL")
+	flag.StringVar(&config.wslsURL, "fedora", defFedoraURL, "WSLS Fedora URL")
 	flag.StringVar(&config.hostname, "host", defHost, "Curio hostname")
 	flag.BoolVar(&config.cacheDisabled, "nocache", false, "Local dev mode flag to disable IIIF cache")
 	flag.Parse()
@@ -69,7 +69,7 @@ func getConfiguration() {
 	log.Printf("[CONFIG] iiifURL       = [%s]", config.iiifURL)
 	log.Printf("[CONFIG] iiifRootURL   = [%s]", config.iiifRootURL)
 	log.Printf("[CONFIG] cacheDisabled = [%t]", config.cacheDisabled)
-	log.Printf("[CONFIG] fedoraURL     = [%s]", config.fedoraURL)
+	log.Printf("[CONFIG] wslsURL     = [%s]", config.wslsURL)
 	log.Printf("[CONFIG] hostname      = [%s]", config.hostname)
 }
 
