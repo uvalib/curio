@@ -35,14 +35,14 @@
             "autocompleteAllowWords": false,
             "bookmarkEnabled": false,
             "downloadEnabled": true,
+            "shareEnabled": true,
             "embedEnabled": false,
             "feedbackEnabled": false,
             "fullscreenEnabled": true,
             "minimiseButtons": true,
             "moreInfoEnabled": false,
             "openEnabled": false,
-            "printEnabled": false,
-            "shareEnabled": true
+            "printEnabled": false
          }
       }
    },
