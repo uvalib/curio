@@ -35,7 +35,7 @@
             "autocompleteAllowWords": false,
             "bookmarkEnabled": false,
             "downloadEnabled": true,
-            "shareEnabled": true,
+            "shareEnabled": false,
             "embedEnabled": false,
             "feedbackEnabled": false,
             "fullscreenEnabled": true,
