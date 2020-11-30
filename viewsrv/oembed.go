@@ -135,7 +135,11 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	// Pull unit param and add it to IIIF query if present
 	unitID := tgtURL.Query().Get("unit")
 	if unitID != "" {
-		imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
+		if config.cacheDisabled {
+			imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
+		} else {
+			imgData.SourceURI = fmt.Sprintf("%s-%s", imgData.SourceURI, unitID)
+		}
 	}
 
 	// Get page param. ATOI will return 0 for an empty string or invalid value
