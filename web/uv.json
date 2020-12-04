@@ -44,6 +44,12 @@
             "openEnabled": false,
             "printEnabled": false
          }
+      },
+      "downloadDialogue": {
+         "options": {
+            "confinedImageSize": 1000,
+            "maxImageWidth": 999999
+         }
       }
    },
    "seadragonCenterPanel": {
