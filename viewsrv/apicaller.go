@@ -68,7 +68,7 @@ func getAPIResponse(url string) (string, error) {
 		if resp.StatusCode == http.StatusNotFound {
 			logLevel = "INFO"
 		}
-		log.Printf("%s: %s returns %s", logLevel, url, respString)
+		log.Printf("%s: %s returns %d (%s)", logLevel, url, resp.StatusCode, respString)
 		return "", errors.New(respString)
 	}
 	return respString, nil
