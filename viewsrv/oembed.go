@@ -120,24 +120,18 @@ func renderResponse(c *gin.Context, fmt string, oembed oembed, err error) {
 }
 
 func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
+	unitID := tgtURL.Query().Get("unit")
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	imgData.EmbedHost = config.hostname
-	if config.cacheDisabled {
+	if config.cacheDisabled || unitID != "" {
 		log.Printf("INFO: IIIF cache is disabled, read manifest from IIIF service")
 		imgData.SourceURI = fmt.Sprintf("%s/pid/%s", config.iiifURL, pid)
+		if unitID != "" {
+			imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
+		}
 	} else {
 		imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", pid, ""))
-	}
-
-	// Pull unit param and add it to IIIF query if present
-	unitID := tgtURL.Query().Get("unit")
-	if unitID != "" {
-		if config.cacheDisabled {
-			imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
-		} else {
-			imgData.SourceURI = fmt.Sprintf("%s-%s", imgData.SourceURI, unitID)
-		}
 	}
 
 	// Get page param. ATOI will return 0 for an empty string or invalid value
