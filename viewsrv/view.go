@@ -24,7 +24,7 @@ func viewHandler(c *gin.Context) {
 		unitID := c.Query("unit")
 
 		iiifURL := ""
-		if config.cacheDisabled {
+		if config.cacheDisabled || unitID != "" {
 			log.Printf("INFO: IIIF cache is disabled, read manifest from IIIF service")
 			iiifURL = fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
 			if unitID != "" {

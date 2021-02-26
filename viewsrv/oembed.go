@@ -17,8 +17,6 @@ import (
 type oembed struct {
 	Version     string `json:"version,omitempty" xml:"version,omitempty"`
 	Type        string `json:"type,omitempty" xml:"type,omitempty"`
-	Title       string `json:"title,omitempty" xml:"title,omitempty"`
-	Author      string `json:"author,omitempty" xml:"author,omitempty"`
 	HTML        string `json:"html,omitempty" xml:"html,omitempty"`
 	Width       int    `json:"width,omitempty" xml:"width,omitempty"`
 	Height      int    `json:"height,omitempty" xml:"height,omitempty"`
@@ -172,13 +170,6 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	tsMetadata, err := getTracksysMetadata(pid)
-	if err != nil {
-		return respData, err
-	}
-
-	respData.Title = tsMetadata.Title
-	respData.Author = tsMetadata.Author
 	respData.HTML = rawHTML
 	respData.Width = imgData.Width
 	respData.Height = imgData.Height
@@ -208,7 +199,7 @@ func getWSLSOEmbedData(tgtURL *url.URL, wslsData *wslsMetadata, maxWidth int, ma
 	}
 	rawHTML := strings.TrimSpace(renderedSnip.String())
 
-	respData.Title = wslsData.Title
+	respData.Provider = "UVA Library"
 	respData.HTML = rawHTML
 	respData.Width = snipData.Width
 	respData.Height = snipData.Height

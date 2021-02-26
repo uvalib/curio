@@ -107,24 +107,6 @@ func getApolloWSLSMetadata(pid string) (*wslsMetadata, error) {
 	return &data, nil
 }
 
-// getTracksysMetadata pulls title and author data from a tracksys API call
-func getTracksysMetadata(pid string) (*tracksysMetadata, error) {
-	// Hit Tracksys API to get brief metadata
-	metadataURL := fmt.Sprintf("%s/metadata/%s?type=brief", config.tracksysURL, pid)
-	jsonResp, err := getAPIResponse(metadataURL)
-	if err != nil {
-		//return nil, fmt.Errorf("Unable to connect with TrackSys to describe pid %s", pid)
-		return nil, err
-	}
-
-	var jsonMap map[string]interface{}
-	json.Unmarshal([]byte(jsonResp), &jsonMap)
-	var data tracksysMetadata
-	data.Title = jsonMap["title"].(string)
-	data.Author, _ = jsonMap["creator"].(string)
-	return &data, nil
-}
-
 func httpClientWithTimeouts(connTimeout int, readTimeout int) *http.Client {
 
 	client := &http.Client{
