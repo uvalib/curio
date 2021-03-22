@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="uv/uv.css">
     <script src="uv/lib/offline.js"></script>
     <script src="uv/helpers.js"></script>
@@ -12,9 +13,52 @@
 </head>
 
 <body style="padding:0; margin:0; background: black;">
-    <div id="uv" class="uv" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0;" >
+   <div class="toolbar" style="background:black;padding:15px;">
+      <span style="cursor: pointer;" onclick="downloadClicked()">
+         <i class="fas fa-download" style="color:white;font-size: 1.5em;"></i>
+         <span style="font-size:0.9em; padding-left: 5px;color:white;">Download image</span>
+      </span>
     </div>
+    <div id="uv" class="uv" style="position: absolute; top: 55px; right: 0; bottom: 0; left: 0;" >
+    </div>
+
     <script>
+       function downloadClicked() {
+         var url = "https://rights-wrapper.lib.virginia.edu/api/pid/"
+         let tgt = document.getElementsByClassName("thumb selected")[0]
+         if ( tgt ) {
+            var src = tgt.dataset.src
+            if ( src ) {
+               // foramt: https://iiif.lib.virginia.edu/iiif/tsm:2804870/full/200,/0/default.jp
+               src = src.replace(/\/full.*$/, "")     // remove all after /full
+               src = src.replace(/^.*iiif\//, '')     // remove all before iiif/
+            } else {
+               alert("Sorry, unable to download the image at this time. Please try again later.")
+               return
+            }
+         } else {
+            let tgt = document.getElementsByClassName("imageBtn iiif")[0]
+            if ( tgt ) {
+               // https://iiifman.lib.virginia.edu/pid/uva-lib:1044011?manifest=https://iiifman.lib.virginia.edu/pid/uva-lib
+               var src = tgt.href
+               src = src.replace(/\?manifest.*$/, "")       // remove all after ?manifest
+               src = src.replace(/^.*pid\//, "")            // remove all before pid/
+            } else {
+               alert("Sorry, unable to download the image at this time. Please try again later.")
+               return
+            }
+         }
+
+         url = url + src
+         var link = document.createElement('a')
+         link.href = url
+         link.target="_blank"
+         link.download = src+'.jpeg'
+         console.log(link)
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+       }
         window.addEventListener('uvLoaded', function (e) {
             createUV('#uv', {
                 embedded: true,

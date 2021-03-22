@@ -34,7 +34,7 @@
          "options": {
             "autocompleteAllowWords": false,
             "bookmarkEnabled": false,
-            "downloadEnabled": true,
+            "downloadEnabled": false,
             "shareEnabled": false,
             "embedEnabled": false,
             "feedbackEnabled": false,
@@ -43,12 +43,6 @@
             "moreInfoEnabled": false,
             "openEnabled": false,
             "printEnabled": false
-         }
-      },
-      "downloadDialogue": {
-         "options": {
-            "confinedImageSize": 1000,
-            "maxImageWidth": 999999
          }
       }
    },
