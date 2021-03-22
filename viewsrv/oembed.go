@@ -36,11 +36,9 @@ func (o *oembed) marshalJSON() string {
 
 // embedImageData is the data needed to render the HTML snippet fot embedded images
 type embedImageData struct {
-	Width     int
-	Height    int
-	SourceURI string
-	EmbedHost string
-	StartPage int
+	Width  int
+	Height int
+	URL    string
 }
 
 type embedWSLSData struct {
@@ -123,26 +121,21 @@ func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int
 	unitID := tgtURL.Query().Get("unit")
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
-	imgData.EmbedHost = config.hostname
-	if config.cacheDisabled || unitID != "" {
-		log.Printf("INFO: IIIF cache is disabled, read manifest from IIIF service")
-		imgData.SourceURI = fmt.Sprintf("%s/pid/%s", config.iiifURL, pid)
-		if unitID != "" {
-			imgData.SourceURI = fmt.Sprintf("%s?unit=%s", imgData.SourceURI, unitID)
-		}
-	} else {
-		imgData.SourceURI = fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", pid, ""))
+	url := fmt.Sprintf("https://%s/view/%s", config.hostname, pid)
+	if unitID != "" {
+		url = fmt.Sprintf("%s?unit=%s", url, unitID)
 	}
 
 	// Get page param. ATOI will return 0 for an empty string or invalid value
-	imgData.StartPage, _ = strconv.Atoi(tgtURL.Query().Get("page"))
+	page, _ := strconv.Atoi(tgtURL.Query().Get("page"))
 
 	// accept 1 based page numbers from client, but use
 	// 0-based canvas index in UV embed snippet
-	if imgData.StartPage > 0 {
-		imgData.StartPage--
-		log.Printf("INFO: requested starting page index %d", imgData.StartPage)
+	if page > 0 {
+		url = fmt.Sprintf("%s?page=%d", url, page)
+		log.Printf("INFO: requested starting page index %d", page)
 	}
+	imgData.URL = url
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
 	imgData.Width = 800
