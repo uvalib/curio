@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 type viewerData struct {
 	URI       string
 	StartPage int
+	PagePIDs  string
 }
 
 // viewHandler takes the initial viewer request and determines what type of resource it is and
@@ -58,7 +61,30 @@ func viewImage(c *gin.Context, iiifURL string) {
 	if err != nil {
 		page = 1
 	}
-	data := viewerData{URI: iiifURL, StartPage: page - 1}
+	manifestStr, err := getAPIResponse(iiifURL)
+
+	var manifest struct {
+		Sequences []struct {
+			Canvases []struct {
+				Thumbnail string `json:"thumbnail"`
+			} `json:"canvases"`
+		} `json:"sequences"`
+	}
+	if jErr := json.Unmarshal([]byte(manifestStr), &manifest); jErr != nil {
+		log.Printf("Unmarshal manifest failed: %s", jErr.Error())
+		c.HTML(http.StatusOK, "not_available.html", nil)
+		return
+	}
+
+	// https://iiif.lib.virginia.edu/iiif/tsm:2804870/full/!200,200/0/default.jpg
+	re := regexp.MustCompile(`^.*iiif/|/full.*$`) // strip all but pid
+	pids := make([]string, 0)
+	for _, c := range manifest.Sequences[0].Canvases {
+		pid := re.ReplaceAllString(c.Thumbnail, "")
+		pids = append(pids, pid)
+	}
+
+	data := viewerData{URI: iiifURL, StartPage: page - 1, PagePIDs: strings.Join(pids, ",")}
 	c.HTML(http.StatusOK, "image_view.html", data)
 }
 
