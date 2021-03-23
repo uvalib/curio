@@ -39,10 +39,24 @@
          } else {
             let tgt = document.getElementsByClassName("imageBtn iiif")[0]
             if ( tgt ) {
+               // https://s3.us-east-1.amazonaws.com/iiif-manifest-cache-staging/pid-uva-lib-1044011?manifest=https://s3.us-east-1.amazonaws.com/iiif-manifest-cache-staging/pid-uva-lib-1044011
+               // https://rights-wrapper.lib.virginia.edu/api/pid/https://s3.us-east-1.amazonaws.com/iiif-manifest-cache-staging/pid-tsb-104353
                // https://iiifman.lib.virginia.edu/pid/uva-lib:1044011?manifest=https://iiifman.lib.virginia.edu/pid/uva-lib
                var src = tgt.href
-               src = src.replace(/\?manifest.*$/, "")       // remove all after ?manifest
-               src = src.replace(/^.*pid\//, "")            // remove all before pid/
+               if ( src.includes("amazonaws") ) {
+                  var parts = src.split("/")
+                  src = parts.pop()                // PID is last part of URL; pid-tsb-104353 or pid-uva-lib-1044011
+                  src = src.replace(/pid-/, '')    // remove pid-
+                  var pparts = src.split("-")
+                  if (pparts.length == 2) {
+                     src = pparts.join(":")
+                  } else {
+                     src = pparts[0]+"-"+pparts[1]+":"+pparts[2]
+                  }
+               } else {
+                  src = src.replace(/\?manifest.*$/, "")       // remove all after ?manifest
+                  src = src.replace(/^.*pid\//, "")            // remove all before pid/
+               }
             } else {
                alert("Sorry, unable to download the image at this time. Please try again later.")
                return
