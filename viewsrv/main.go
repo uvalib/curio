@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the service
-const Version = "3.2.0"
+const Version = "4.0.0"
 
 func main() {
 	// Load cfg
@@ -34,10 +34,12 @@ func main() {
 	router.GET("/", versionHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
-	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
-	router.Use(static.Serve("/view/uv", static.LocalFile("./web/uv", true)))
 	router.GET("/view/:pid", viewHandler)
 	router.GET("/oembed", oEmbedHandler)
+
+	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
+	router.Use(static.Serve("/uv", static.LocalFile("./web/uv", true)))
+
 	api := router.Group("/api")
 	{
 		api.GET("/aries", ariesPing)
