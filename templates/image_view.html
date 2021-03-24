@@ -27,7 +27,7 @@
       function downloadClicked() {
          var pidEle = document.getElementById("page-pids");
          var pids = pidEle.dataset.pids.split(",");
-         var url = "https://rights-wrapper.lib.virginia.edu/api/pid/";
+         var url = '{{.RightsURI}}/';
          let tgt = document.getElementsByClassName("thumb selected")[0];
          var tgtPID = ""
          if ( tgt ) {
@@ -39,8 +39,7 @@
 
          url = url + tgtPID
          var link = document.createElement('a')
-         link.href = url
-         link.target="_blank"
+         link.href = url+"?download=1"
          link.download = tgtPID+'.jpeg'
          console.log(link)
          document.body.appendChild(link);
@@ -55,7 +54,7 @@
                embedded: true,
                configUri: '/public/uv.json',
                canvasIndex: sp,
-               iiifResourceUri: '{{.URI}}',
+               iiifResourceUri: '{{.IIIFURI}}',
                locales: [{name: 'en-GB'}]
             }, new UV.URLDataProvider(true));
       }, false);

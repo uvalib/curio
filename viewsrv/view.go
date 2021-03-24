@@ -13,7 +13,8 @@ import (
 )
 
 type viewerData struct {
-	URI       string
+	IIIFURI   string
+	RightsURI string
 	StartPage int
 	PagePIDs  string
 }
@@ -34,7 +35,7 @@ func viewHandler(c *gin.Context) {
 				iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
 			}
 		} else {
-			iiifURL = fmt.Sprintf("%s/%s", config.iiifRootURL, normalizeManifestName("pid", srcPID, unitID))
+			iiifURL = fmt.Sprintf("%s/%s", config.iiifCacheURL, normalizeManifestName("pid", srcPID, unitID))
 		}
 		log.Printf("INFO: render %s as image", srcPID)
 		viewImage(c, iiifURL)
@@ -84,7 +85,7 @@ func viewImage(c *gin.Context, iiifURL string) {
 		pids = append(pids, pid)
 	}
 
-	data := viewerData{URI: iiifURL, StartPage: page - 1, PagePIDs: strings.Join(pids, ",")}
+	data := viewerData{RightsURI: config.rightsURL, IIIFURI: iiifURL, StartPage: page - 1, PagePIDs: strings.Join(pids, ",")}
 	c.HTML(http.StatusOK, "image_view.html", data)
 }
 
