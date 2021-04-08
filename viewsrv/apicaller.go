@@ -52,7 +52,6 @@ var httpClient = httpClientWithTimeouts(5, 15)
 
 // getAPIResponse calls a JSON endpoint and returns the response
 func getAPIResponse(url string) (string, error) {
-
 	log.Printf("INFO: GET %s", url)
 	resp, err := httpClient.Get(url)
 	if err != nil {
