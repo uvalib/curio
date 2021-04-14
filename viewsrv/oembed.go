@@ -85,9 +85,14 @@ func oEmbedHandler(c *gin.Context) {
 	bits := strings.Split(relPath, "/")
 	pid := bits[len(bits)-1]
 
+	// Extract unit and page data, if present
+	unitID := parsedURL.Query().Get("unit")
+	page, _ := strconv.Atoi(parsedURL.Query().Get("page"))
+
 	// See what type of resource is being requested: IIIF?
-	if isIiifCandidate(pid) {
-		respData, err := getImageOEmbedData(parsedURL, pid, maxWidth, maxHeight)
+	_, iiifErr := getIIIFManifestURL(pid, unitID)
+	if iiifErr == nil {
+		respData, err := getImageOEmbedData(pid, unitID, page, maxWidth, maxHeight)
 		renderResponse(c, respFormat, respData, err)
 		return
 	}
@@ -117,17 +122,13 @@ func renderResponse(c *gin.Context, fmt string, oembed oembed, err error) {
 	}
 }
 
-func getImageOEmbedData(tgtURL *url.URL, pid string, maxWidth int, maxHeight int) (oembed, error) {
-	unitID := tgtURL.Query().Get("unit")
+func getImageOEmbedData(pid string, unitID string, page int, maxWidth int, maxHeight int) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var imgData embedImageData
 	url := fmt.Sprintf("https://%s/view/%s", config.hostname, pid)
 	if unitID != "" {
 		url = fmt.Sprintf("%s?unit=%s", url, unitID)
 	}
-
-	// Get page param. ATOI will return 0 for an empty string or invalid value
-	page, _ := strconv.Atoi(tgtURL.Query().Get("page"))
 
 	// accept 1 based page numbers from client, but use
 	// 0-based canvas index in UV embed snippet

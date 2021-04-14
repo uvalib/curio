@@ -34,7 +34,8 @@ func ariesLookup(c *gin.Context) {
 	out.Identifiers = append(out.Identifiers, passedPID)
 
 	// easy check; see if there is an IIIF manifest with this PID visible
-	if isIiifCandidate(passedPID) {
+	_, err := getIIIFManifestURL(passedPID, "")
+	if err == nil {
 		// yes; this is an image asset. Return the oEbmed and viewer URLs
 		publicURL := fmt.Sprintf("https://%s/view/%s", config.hostname, passedPID)
 		oEmbedURL := fmt.Sprintf("https://%s/oembed?url=%s", config.hostname, url.QueryEscape(publicURL))
@@ -47,7 +48,7 @@ func ariesLookup(c *gin.Context) {
 	}
 
 	// Not an image... see if it is WSLS
-	_, err := getApolloWSLSMetadata(passedPID)
+	_, err = getApolloWSLSMetadata(passedPID)
 	if err == nil {
 		publicURL := fmt.Sprintf("https://%s/view/%s", config.hostname, passedPID)
 		out.AccessURL = append(out.AccessURL, publicURL)

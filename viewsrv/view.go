@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,15 +24,11 @@ type viewerData struct {
 // hands the rendering off to the appropriate handler - or returns 404
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
-	if isIiifCandidate(srcPID) {
-		unitID := c.Query("unit")
-		iiifURL := fmt.Sprintf("%s/pid/%s", config.iiifURL, srcPID)
-		if unitID != "" {
-			iiifURL = fmt.Sprintf("%s?unit=%s", iiifURL, unitID)
-		}
-
+	unitID := c.Query("unit")
+	iiifManURL, iiifErr := getIIIFManifestURL(srcPID, unitID)
+	if iiifErr == nil {
 		log.Printf("INFO: render %s as image", srcPID)
-		viewImage(c, iiifURL)
+		viewImage(c, iiifManURL)
 		return
 	}
 
@@ -103,13 +100,14 @@ func viewWSLS(c *gin.Context, wslsData *wslsMetadata) {
 	c.HTML(http.StatusOK, "wsls_view.html", wslsData)
 }
 
-// isIiifCandidate will call the IIIF manifest service exist endpoint to determine of the pid has IIIF data
-func isIiifCandidate(pid string) bool {
+// getIIIFManifestURL retrieves the cached IIIF manifest for an item. If a unit is specified,
+// the manifest just needs to exist; cache does not matter as the manifest will be generated on the fly
+func getIIIFManifestURL(pid string, unit string) (string, error) {
 	log.Printf("INFO: check if %s is a candidate for IIIF metadata...", pid)
 	url := fmt.Sprintf("%s/pid/%s/exist", config.iiifURL, pid)
 	resp, err := getAPIResponse(url)
 	if err != nil {
-		return false
+		return "", err
 	}
 	var parsed struct {
 		Exists bool   `json:"exists"`
@@ -118,9 +116,21 @@ func isIiifCandidate(pid string) bool {
 	}
 	err = json.Unmarshal([]byte(resp), &parsed)
 	if err != nil {
-		log.Printf("ERROR: Unable to parse response from %s: %s", url, err.Error())
-		return false
+		return "", err
 	}
-	log.Printf("IIIF exist response %+v", parsed)
-	return parsed.Exists
+
+	// when unit is present, dont care if it is cached or not, just care if the metadata exists
+	if unit != "" {
+		if parsed.Exists {
+			iiifURL := fmt.Sprintf("%s/pid/%s?unit=%s", config.iiifURL, pid, unit)
+			log.Printf("INFO: IIIF manifest available at %s", iiifURL)
+			return iiifURL, nil
+		}
+		return "", errors.New("manifest not found")
+	}
+	if !parsed.Exists || !parsed.Cached {
+		return "", errors.New("manifest not found")
+	}
+	log.Printf("INFO: IIIF manifest cached at %s", parsed.URL)
+	return parsed.URL, nil
 }
