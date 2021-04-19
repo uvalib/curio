@@ -133,7 +133,11 @@ func getImageOEmbedData(pid string, unitID string, page int, maxWidth int, maxHe
 	// accept 1 based page numbers from client, but use
 	// 0-based canvas index in UV embed snippet
 	if page > 0 {
-		url = fmt.Sprintf("%s?page=%d", url, page)
+		if unitID != "" {
+			url = fmt.Sprintf("%s&page=%d", url, page)
+		} else {
+			url = fmt.Sprintf("%s?page=%d", url, page)
+		}
 		log.Printf("INFO: requested starting page index %d", page)
 	}
 	imgData.URL = url
