@@ -140,6 +140,7 @@ func getImageOEmbedData(pid string, unitID string, page int, maxWidth int, maxHe
 		}
 		log.Printf("INFO: requested starting page index %d", page)
 	}
+	log.Printf("INFO: Target oembed URL: %s", url)
 	imgData.URL = url
 
 	// default embed size is 800x600. Params maxwidth and maxheight can override.
