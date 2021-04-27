@@ -31,11 +31,11 @@ ENV APP_HOME /curio
 WORKDIR $APP_HOME
 
 # Create necessary directories
-RUN mkdir -p $APP_HOME/scripts $APP_HOME/bin
+RUN mkdir -p $APP_HOME $APP_HOME/scripts $APP_HOME/bin
 RUN chown -R webservice $APP_HOME && chgrp -R webservice $APP_HOME
 
 # port and run command
-EXPOSE 8085
+EXPOSE 8080
 CMD scripts/entry.sh
 
 # Move in necessary assets
