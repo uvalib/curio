@@ -107,6 +107,9 @@ export default {
 </script>
 
 <style lang="scss">
+::v-deep .tify-header_column.-controls.-visible  {
+   display: none !important;
+}
 .not-found {
    display: inline-block;
    padding: 20px 50px;
@@ -169,6 +172,11 @@ export default {
             }
          }
       }
+   }
+}
+@media only screen and (max-width: 600px) {
+   .dl-text {
+      display: none;
    }
 }
 </style>

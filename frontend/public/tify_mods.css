@@ -1,13 +1,29 @@
-/*!
- * TIFY v0.24.2 * (c) 2017-2020 Göttingen State and University Library (https://www.sub.uni-goettingen.de/en/)
- * AGPL-3.0 * https://github.com/tify-iiif-viewer/tify
- */
+/* don't show the info button */
  .tify-info {
     display: none !important;
  }
+
+ /* the first button group is the horizontal buttons next to paging. hide them...*/
 .tify-header_button-group.-view:first-of-type .tify-header_button {
    display: none;
 }
+
+/* ...except for the pager */
 .tify-header_button-group.-view:first-of-type .tify-header_button:nth-child(2) {
    display: inline-block !important;
+}
+
+/* dont show the dropdown, except... */
+.tify-app.-large .tify-header_column.-controls.-visible  .tify-header_button {
+   display: none;
+}
+.tify-header_column.-controls.-visible  .tify-header_button:nth-child(1), /* scan */
+.tify-header_column.-controls.-visible  .tify-header_button:nth-child(6)  /* fullscreen */
+ {
+   display: block !important;
+}
+
+/* keep the paging controls visible at bottom of popup */
+.tify-app.-small .tify-header_button-group.-popup .tify-header_button  {
+   display: block !important;
 }
