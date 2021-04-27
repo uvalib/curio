@@ -53,7 +53,6 @@ export default new Vuex.Store({
             ctx.commit('setViewData', response.data)
             ctx.commit("setWorking", false)
          }).catch(error => {
-            console.error("Curio request failed: "+error)
             ctx.commit('setFailed')
             ctx.commit("setWorking", false)
          })

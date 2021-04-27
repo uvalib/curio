@@ -80,7 +80,6 @@ export default {
             delete testQ.tify
             let tify = {pages: [this.startPage]}
             testQ.tify = JSON.stringify(tify)
-            console.log("REPLACE URL")
             this.$router.replace({query: testQ})
          }
       })
