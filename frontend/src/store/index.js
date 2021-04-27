@@ -52,7 +52,7 @@ export default new Vuex.Store({
          await axios.get(`/api/view/${pid}?page=${page}`).then(response => {
             ctx.commit('setViewData', response.data)
             ctx.commit("setWorking", false)
-         }).catch(error => {
+         }).catch( () => {
             ctx.commit('setFailed')
             ctx.commit("setWorking", false)
          })
