@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the service
-const Version = "4.1.1"
+const Version = "5.0.0"
 
 func main() {
 	// Load cfg
@@ -25,26 +25,21 @@ func main() {
 	gin.DisableConsoleColor()
 	router := gin.Default()
 
-	// load all of the templates
-	router.LoadHTMLFiles("./templates/image_view.html", "./templates/wsls_view.html", "./templates/not_available.html")
-
 	// Set routes and start server
 	router.Use(cors.Default())
 	router.StaticFile("/favicon.ico", "./web/favicon.ico")
 	router.GET("/", versionHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
-	router.GET("/view/:pid", viewHandler)
 	router.GET("/oembed", oEmbedHandler)
-
-	router.Use(static.Serve("/public", static.LocalFile("./web", true)))
-	router.Use(static.Serve("/uv", static.LocalFile("./web/uv", true)))
-
 	api := router.Group("/api")
 	{
+		api.GET("/view/:pid", viewHandler)
 		api.GET("/aries", ariesPing)
 		api.GET("/aries/:id", ariesLookup)
 	}
+
+	router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
 	portStr := fmt.Sprintf(":%d", config.port)
 	log.Printf("INFO: start Curio on port %s with CORS support enabled", portStr)

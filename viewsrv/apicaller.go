@@ -34,17 +34,17 @@ type tracksysMetadata struct {
 
 // wslsMetadata contains the Apollo metadata supporting WSLS
 type wslsMetadata struct {
-	HasVideo      bool
-	HasScript     bool
-	WSLSID        string
-	Title         string
-	Description   string
-	VideoURL      string
-	PosterURL     string
-	PDFURL        string
-	PDFThumbURL   string
-	TranscriptURL string
-	Duration      string
+	HasVideo      bool   `json:"has_video"`
+	HasScript     bool   `json:"has_script"`
+	WSLSID        string `json:"wsls_id"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	VideoURL      string `json:"video_url,omitempty"`
+	PosterURL     string `json:"poster_url,omitempty"`
+	PDFURL        string `json:"pdf_url,omitempty"`
+	PDFThumbURL   string `json:"thumb_url,omitempty"`
+	TranscriptURL string `json:"transcript_url,omitempty"`
+	Duration      string `json:"duration,omitempty"`
 }
 
 // use a shared client, 5 second connect, 15 second read timeout

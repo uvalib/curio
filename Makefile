@@ -9,26 +9,27 @@ GOVET = $(GOCMD) vet
 
 BASE_NAME=curio
 
-build: darwin copy-web
+build: darwin web
 
-all: darwin linux copy-web
+all: darwin linux web
 
-linux-full: linux copy-web
+linux-full: linux web
 
-darwin-full: darwin copy-web
+darwin-full: darwin web
+
+web:
+	mkdir -p bin/
+	cd frontend && yarn install && yarn build
+	rm -rf bin/public
+	mv frontend/dist bin/public
 
 darwin:
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin viewsrv/*.go
+	cp -r templates/ bin/templates
 
 linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux viewsrv/*.go
-
-copy-web:
-	mkdir -p bin/
-	rm -rf bin/web
-	rm -rf bin/templates
-	cp -R web/ bin/web/
-	cp -R templates bin/templates/
+	cp -r templates/ bin/templates
 
 clean:
 	rm -rf bin
@@ -40,6 +41,7 @@ vet:
 	cd viewsrv; $(GOVET)
 
 dep:
+	cd frontend && yarn upgrade
 	$(GOGET) -u ./viewsrv/...
 	$(GOMOD) tidy
 	$(GOMOD) verify

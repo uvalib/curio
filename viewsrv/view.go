@@ -13,11 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type viewResponse struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
 type viewerData struct {
-	IIIFURI   string
-	RightsURI string
-	StartPage int
-	PagePIDs  string
+	IIIFURI   string `json:"iiif"`
+	RightsURI string `json:"rights"`
+	StartPage int    `json:"page"`
+	PagePIDs  string `json:"page_pids"`
 }
 
 // viewHandler takes the initial viewer request and determines what type of resource it is and
@@ -25,6 +30,7 @@ type viewerData struct {
 func viewHandler(c *gin.Context) {
 	srcPID := c.Param("pid")
 	unitID := c.Query("unit")
+	log.Printf("INFO: Check if %s is an image...", srcPID)
 	iiifManURL, iiifErr := getIIIFManifestURL(srcPID, unitID)
 	if iiifErr == nil {
 		log.Printf("INFO: render %s as image", srcPID)
@@ -41,8 +47,7 @@ func viewHandler(c *gin.Context) {
 		return
 	}
 
-	// Nope; fail
-	c.HTML(http.StatusOK, "not_available.html", nil)
+	c.String(http.StatusNotFound, "not found")
 }
 
 // viewImage displays a series of images in the universalViewer
@@ -63,7 +68,7 @@ func viewImage(c *gin.Context, iiifURL string) {
 	}
 	if jErr := json.Unmarshal([]byte(manifestStr), &manifest); jErr != nil {
 		log.Printf("Unmarshal manifest failed: %s", jErr.Error())
-		c.HTML(http.StatusOK, "not_available.html", nil)
+		c.String(http.StatusNotFound, "not found")
 		return
 	}
 
@@ -75,8 +80,9 @@ func viewImage(c *gin.Context, iiifURL string) {
 		pids = append(pids, pid)
 	}
 
-	data := viewerData{RightsURI: config.rightsURL, IIIFURI: iiifURL, StartPage: page - 1, PagePIDs: strings.Join(pids, ",")}
-	c.HTML(http.StatusOK, "image_view.html", data)
+	data := viewerData{RightsURI: config.rightsURL, IIIFURI: iiifURL, StartPage: page, PagePIDs: strings.Join(pids, ",")}
+	out := viewResponse{Type: "iiif", Data: data}
+	c.JSON(http.StatusOK, out)
 }
 
 // viewWSLS renders a custom view of WSLS content that includes video clips, transcripts and a poster
@@ -97,7 +103,8 @@ func viewWSLS(c *gin.Context, wslsData *wslsMetadata) {
 		wslsData.TranscriptURL = fmt.Sprintf("%s/%s/%s.txt", config.wslsURL, wslsData.WSLSID, wslsData.WSLSID)
 	}
 
-	c.HTML(http.StatusOK, "wsls_view.html", wslsData)
+	out := viewResponse{Type: "wsls", Data: wslsData}
+	c.JSON(http.StatusOK, out)
 }
 
 // getIIIFManifestURL retrieves the cached IIIF manifest for an item. If a unit is specified,

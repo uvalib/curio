@@ -1,0 +1,13 @@
+/*!
+ * TIFY v0.24.2 * (c) 2017-2020 Göttingen State and University Library (https://www.sub.uni-goettingen.de/en/)
+ * AGPL-3.0 * https://github.com/tify-iiif-viewer/tify
+ */
+ .tify-info {
+    display: none !important;
+ }
+.tify-header_button-group.-view:first-of-type .tify-header_button {
+   display: none;
+}
+.tify-header_button-group.-view:first-of-type .tify-header_button:nth-child(2) {
+   display: inline-block !important;
+}

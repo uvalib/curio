@@ -54,6 +54,7 @@ func oEmbedHandler(c *gin.Context) {
 	if respFormat == "" {
 		respFormat = "json"
 	}
+	log.Printf("oEmbed format requested: %s", respFormat)
 
 	maxWidth, err := strconv.Atoi(c.Query("maxwidth"))
 	if err != nil {

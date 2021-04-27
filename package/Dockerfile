@@ -24,7 +24,7 @@ RUN addgroup webservice && adduser webservice -G webservice -D
 ENV TZ=UTC
 RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Specify home 
+# Specify home
 ENV APP_HOME /curio
 WORKDIR $APP_HOME
 
@@ -40,7 +40,6 @@ CMD scripts/entry.sh
 COPY package/scripts/entry.sh $APP_HOME/scripts/entry.sh
 COPY package/data/container_bash_profile /home/webservice/.profile
 COPY templates $APP_HOME/bin/templates
-COPY web $APP_HOME/bin/web
 COPY --from=builder /build/bin/curio.linux $APP_HOME/bin/curio
 
 # Ensure permissions are correct
