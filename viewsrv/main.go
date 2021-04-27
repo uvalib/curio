@@ -27,8 +27,6 @@ func main() {
 
 	// Set routes and start server
 	router.Use(cors.Default())
-	router.StaticFile("/favicon.ico", "./web/favicon.ico")
-	router.GET("/", versionHandler)
 	router.GET("/version", versionHandler)
 	router.GET("/healthcheck", healthCheckHandler)
 	router.GET("/oembed", oEmbedHandler)
@@ -39,7 +37,16 @@ func main() {
 		api.GET("/aries/:id", ariesLookup)
 	}
 
+	// Note: in dev mode, this is never actually used. The front end is served
+	// by yarn and it proxies all requests to the API to the routes above
 	router.Use(static.Serve("/", static.LocalFile("./public", true)))
+
+	// add a catchall route that renders the index page.
+	// based on no-history config setup info here:
+	//    https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations
+	router.NoRoute(func(c *gin.Context) {
+		c.File("./public/index.html")
+	})
 
 	portStr := fmt.Sprintf(":%d", config.port)
 	log.Printf("INFO: start Curio on port %s with CORS support enabled", portStr)

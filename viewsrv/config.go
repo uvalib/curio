@@ -18,7 +18,7 @@ type configData struct {
 var config configData
 
 func getConfiguration() {
-	flag.IntVar(&config.port, "port", 8085, "Port to offer service on (default 8085)")
+	flag.IntVar(&config.port, "port", 8080, "Port to offer service on (default 8085)")
 	flag.StringVar(&config.apolloURL, "apollo", "https://apollo.lib.virginia.edu/api", "Apollo URL")
 	flag.StringVar(&config.iiifURL, "iiif", "https://iiifman.lib.virginia.edu", "IIIF manifest URL")
 	flag.StringVar(&config.wslsURL, "fedora", "https://wsls.lib.virginia.edu", "WSLS Fedora URL")
