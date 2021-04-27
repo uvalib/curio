@@ -9,13 +9,13 @@ GOVET = $(GOCMD) vet
 
 BASE_NAME=curio
 
-build: darwin web
+build: darwin web deploy-templates
 
-all: darwin linux web
+all: darwin linux web deploy-templates
 
-linux-full: linux web
+linux-full: linux web deploy-templates
 
-darwin-full: darwin web
+darwin-full: darwin web deploy-templates
 
 web:
 	mkdir -p bin/
@@ -25,11 +25,15 @@ web:
 
 darwin:
 	GOOS=darwin GOARCH=amd64 $(GOBUILD) -a -o bin/$(BASE_NAME).darwin viewsrv/*.go
-	cp -r templates/ bin/templates
 
 linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -a -installsuffix cgo -o bin/$(BASE_NAME).linux viewsrv/*.go
-	cp -r templates/ bin/templates
+
+deploy-templates:
+	mkdir -p bin/
+	rm -rf bin/templates
+	mkdir -p bin/templates
+	cp ./templates/* bin/templates
 
 clean:
 	rm -rf bin

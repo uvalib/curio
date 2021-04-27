@@ -7,7 +7,9 @@ RUN apk update && apk upgrade && apk add make
 WORKDIR /build
 COPY go.mod go.sum Makefile ./
 COPY viewsrv ./viewsrv
-RUN make linux
+COPY frontend ./frontend
+COPY templates ./templates
+RUN make linux-full
 
 #
 # build the target container
@@ -39,11 +41,13 @@ CMD scripts/entry.sh
 # Move in necessary assets
 COPY package/scripts/entry.sh $APP_HOME/scripts/entry.sh
 COPY package/data/container_bash_profile /home/webservice/.profile
-COPY templates $APP_HOME/bin/templates
 COPY --from=builder /build/bin/curio.linux $APP_HOME/bin/curio
+COPY --from=builder /build/bin/public $APP_HOME/bin/public
+COPY --from=builder /build/bin/templates $APP_HOME/bin/templates
 
 # Ensure permissions are correct
 RUN chown webservice:webservice /home/webservice/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/curio && chmod 755 /home/webservice/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/curio
+RUN chown -R webservice:webservice $APP_HOME/bin/public $APP_HOME/bin/templates && chmod -R 755 $APP_HOME/bin/templates $APP_HOME/bin/public
 
 # Add the build tag
 ARG BUILD_TAG
