@@ -14,7 +14,7 @@ export default new Vuex.Store({
       startPage: 0,
       PID: "",
       wslsData: {},
-      falied: false
+      failed: false
    },
    mutations: {
       setWorking(state, flag) {
@@ -46,10 +46,14 @@ export default new Vuex.Store({
       }
    },
    actions: {
-      async getPIDViewData(ctx, {pid, page}) {
+      async getPIDViewData(ctx, {pid, page, unit}) {
          ctx.commit("setWorking", true)
          ctx.commit("setPID", pid)
-         await axios.get(`/api/view/${pid}?page=${page}`).then(response => {
+         let url = `/api/view/${pid}?page=${page}`
+         if (unit ) {
+            url += `&unit=${unit}`
+         }
+         await axios.get(url).then(response => {
             ctx.commit('setViewData', response.data)
             ctx.commit("setWorking", false)
          }).catch( () => {

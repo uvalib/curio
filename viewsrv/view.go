@@ -110,7 +110,7 @@ func viewWSLS(c *gin.Context, wslsData *wslsMetadata) {
 // getIIIFManifestURL retrieves the cached IIIF manifest for an item. If a unit is specified,
 // the manifest just needs to exist; cache does not matter as the manifest will be generated on the fly
 func getIIIFManifestURL(pid string, unit string) (string, error) {
-	log.Printf("INFO: check if %s is a candidate for IIIF metadata...", pid)
+	log.Printf("INFO: check if %s, unitID [%s] is a candidate for IIIF metadata...", pid, unit)
 	url := fmt.Sprintf("%s/pid/%s/exist", config.iiifURL, pid)
 	resp, err := getAPIResponse(url)
 	if err != nil {
@@ -128,6 +128,7 @@ func getIIIFManifestURL(pid string, unit string) (string, error) {
 
 	// when unit is present, dont care if it is cached or not, just care if the metadata exists
 	if unit != "" {
+		log.Printf("Unit %s present in request, not using IIIF cache", unit)
 		if parsed.Exists {
 			iiifURL := fmt.Sprintf("%s/pid/%s?unit=%s", config.iiifURL, pid, unit)
 			log.Printf("INFO: IIIF manifest available at %s", iiifURL)

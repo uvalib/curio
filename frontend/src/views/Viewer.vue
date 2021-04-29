@@ -62,8 +62,9 @@ export default {
    async created() {
       let pid = this.$route.params.pid
       let page = this.$route.query.page
+      let unitID = this.$route.query.unit
       if (!page) page = "1"
-      await this.$store.dispatch("getPIDViewData", {pid: pid, page: page})
+      await this.$store.dispatch("getPIDViewData", {pid: pid, page: page, unit: unitID})
       window.tifyOptions = {
          container: '#tify-viewer',
          immediateRender: false,
