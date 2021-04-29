@@ -86,7 +86,7 @@ export default {
    },
    methods: {
       downloadImage() {
-         let page = 1
+         let page = 0
          let paramStr = this.$router.currentRoute.query.tify
          if (paramStr && paramStr.length > 0) {
             let tifyParams = JSON.parse(paramStr)
