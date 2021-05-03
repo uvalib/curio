@@ -88,17 +88,18 @@ export default {
    methods: {
       downloadImage() {
          let page = 0
-         let paramStr = this.$route.query.tify
-         if (paramStr && paramStr.length > 0) {
-            let tifyParams = JSON.parse(paramStr)
+         let url = new URL(window.location.href)
+         let tifyParamsStr = url.searchParams.get("tify")
+         if (tifyParamsStr && tifyParamsStr.length > 0) {
+            let tifyParams = JSON.parse(tifyParamsStr)
             if (tifyParams.pages) {
                page = tifyParams.pages[0]-1
             }
          }
          let tgtPID =  this.pagePIDs[page]
-         let url = `${this.rightsURL}/${tgtPID}`
+         let dlURL = `${this.rightsURL}/${tgtPID}`
          var link = document.createElement('a')
-         link.href = url+"?download=1"
+         link.href = dlURL+"?download=1"
          document.body.appendChild(link)
          link.click()
          document.body.removeChild(link)
