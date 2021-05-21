@@ -11,7 +11,7 @@
     "@fortawesome/fontawesome-free": "^5.15.3",
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
-    "node-sass": "^5.0.0",
+    "sass": "^1.33.0",
     "sass-loader": "^10",
     "tify": "^0.24.2",
     "video.js": "^7.11.8",
