@@ -2,8 +2,7 @@
    <div class="vue">
       <div class="header" role="banner">
          <div class="library-link">
-            <UvaLibraryLogo v-if="isKiosk" />
-            <a v-else target="_blank" href="https://library.virginia.edu">
+            <a target="_blank" href="https://library.virginia.edu">
                <UvaLibraryLogo />
             </a>
          </div>
