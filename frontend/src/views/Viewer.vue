@@ -59,11 +59,25 @@ export default {
          wslsData: state => state.wslsData,
       })
    },
+   data: function() {
+      return {
+         lastParams: "",
+         tgtDomain: "",
+         intervalID: -1
+      }
+   },
    async created() {
+      let testQ = Object.assign({}, this.$route.query)
+      let changed = false
       let pid = this.$route.params.pid
       let page = this.$route.query.page
       let unitID = this.$route.query.unit
       if (!page) page = "1"
+      this.tgtDomain = this.$route.query.domain
+      if (this.tgtDomain) {
+         delete testQ.domain
+         changed = true
+      }
       await this.$store.dispatch("getPIDViewData", {pid: pid, page: page, unit: unitID})
       window.tifyOptions = {
          container: '#tify-viewer',
@@ -74,18 +88,96 @@ export default {
       }
       await import ('tify/dist/tify.css')
       await import ('tify/dist/tify.js')
+
       this.$nextTick( ()=> {
-         if (this.startPage > 1) {
-            let testQ = Object.assign({}, this.$route.query)
+         let url = window.location.href
+         if ( url.includes.tify ) {
+            if (this.startPage > 1) {
+               delete testQ.page
+               delete testQ.tify
+               changed = true
+               let tify = {pages: [this.startPage]}
+               testQ.tify = JSON.stringify(tify)
+            }
+         } else if (url.includes("?")) {
+            // convert generic query params x,y,zoom,rotation,page into tify object
+            let qs = url.split("?")[1]
+            let tify = {view: "info"}
+            let bits = qs.split("&")
+            bits.forEach( p => {
+               let data = p.split("=")
+               if ( data[0] == "x") {
+                  tify.panX = data[1]
+               } else if ( data[0] == "y") {
+                  tify.panY = data[1]
+               } else if ( data[0] == "zoom") {
+                  tify.zoom = data[1]
+               } else if ( data[0] == "rotation") {
+                  tify.rotation = data[1]
+               } else if ( data[0] == "page") {
+                  tify.pages = [ parseInt(data[1],10) ]
+               }
+            })
+            delete testQ.x
+            delete testQ.y
+            delete testQ.zoom
+            delete testQ.rotation
             delete testQ.page
-            delete testQ.tify
-            let tify = {pages: [this.startPage]}
             testQ.tify = JSON.stringify(tify)
-            this.$router.replace({query: testQ})
+            changed = true
+         }
+
+         if ( changed) {
+            history.replaceState(null, null, "?tify="+testQ.tify)
+         }
+
+        if ( this.tgtDomain && this.tgtDomain != "" && this.tgtDomain != "*") {
+            this.intervalID = setInterval( this.changeParam, 1000)
          }
       })
    },
+   beforeDestroy() {
+      if ( this.intervalID > -1) {
+         clearInterval(this.intervalID)
+         this.intervalID = -1
+      }
+   },
    methods: {
+      changeParam() {
+         let url = window.location.href
+         let qs = url.split("?")[1]
+         if (qs && qs != this.lastParams) {
+            this.lastParams = qs
+            if (qs.includes("tify=")) {
+               // this is tiffy changing the URL itself. The params are a json pbject named tify.
+               // remove tify= and parse the remainder into a json object
+               let dataStr = qs.substring(5)
+               let obj = JSON.parse( decodeURIComponent(dataStr))
+               if ( obj.panX || obj.panY || obj.zoom || obj.pages || obj.rotation) {
+                  let evt = {name: "curio"}
+                  if ( obj.panX ) {
+                     evt.x = obj.panX
+                  }
+                  if ( obj.panY ) {
+                     evt.y = obj.panY
+                  }
+                  if ( obj.zoom) {
+                     evt.zoom = obj.zoom
+                  }
+                  if ( obj.rotation) {
+                     evt.rotation = obj.rotation
+                  }
+                  if (obj.pages) {
+                     evt.page=obj.pages[0]
+                  }
+                  // console.log(evt)
+                  window.top.postMessage(evt, this.tgtDomain)
+               } else {
+                  // console.log("not data")
+               }
+            }
+         }
+      },
       downloadImage() {
          let page = 0
          let url = new URL(window.location.href)
