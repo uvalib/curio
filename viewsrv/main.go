@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the service
-const Version = "5.2.0"
+const Version = "6.0.0"
 
 func main() {
 	// Load cfg
@@ -33,8 +33,6 @@ func main() {
 	api := router.Group("/api")
 	{
 		api.GET("/view/:pid", viewHandler)
-		api.GET("/aries", ariesPing)
-		api.GET("/aries/:id", ariesLookup)
 	}
 
 	// Note: in dev mode, this is never actually used. The front end is served

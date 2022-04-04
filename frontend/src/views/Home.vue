@@ -38,20 +38,14 @@
    </div>
 </template>
 
-<script>
+<script setup>
 import UvaLibraryLogo from "@/components/UvaLibraryLogo.vue"
-export default {
-   name: "Home",
-   components: {
-      UvaLibraryLogo
-   },
-   computed: {
-      basePath() {
-         let url = window.location.href
-         return url
-      }
-   }
-};
+import { computed } from 'vue'
+
+const basePath = computed(()=>{
+   let url = window.location.href
+   return url
+})
 </script>
 
 <style scoped lang="scss">
