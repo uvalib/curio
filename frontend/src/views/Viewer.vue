@@ -1,8 +1,8 @@
 <template>
    <div class="viewer">
-      <WaitSpinner v-if="working" :overlay="true" message="Loading viewer..." />
+      <WaitSpinner v-if="curio.working" :overlay="true" message="Loading viewer..." />
       <template v-else>
-         <template v-if="viewType=='iiif'">
+         <template v-if="curio.viewType=='iiif'">
             <div id="tify-viewer"></div>
             <div class="extra-tools">
                <span class="image-download" @click="downloadImage">
@@ -11,29 +11,29 @@
                </span>
             </div>
          </template>
-         <div v-else-if="viewType=='wsls'" class="wsls">
+         <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
-               <h3>{{wslsData.title}}</h3>
-               <p>{{wslsData.description}}</p>
+               <h3>{{curio.wslsData.title}}</h3>
+               <p>{{curio.wslsData.description}}</p>
             </div>
-            <div v-if="wslsData.has_video" class="video-container" >
+            <div v-if="curio.wslsData.has_video" class="video-container" >
                <video class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto"
-                  :poster="wslsData.poster_url" data-setup='{"inactivityTimeout": 0}'
+                  :poster="curio.wslsData.poster_url" data-setup='{"inactivityTimeout": 0}'
                >
-                  <source :src="wslsData.video_url" type='video/mp4'>
+                  <source :src="curio.wslsData.video_url" type='video/mp4'>
                   <p class="vjs-no-js">
                      To view this video please enable JavaScript, and consider upgrading to a web browser that
                      <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
                   </p>
                </video>
-               <p class="duration">Duration: {{wslsData.duration}}</p>
+               <p class="duration">Duration: {{curio.wslsData.duration}}</p>
             </div>
-            <div v-if="wslsData.has_script" class="anchorscript-container">
+            <div v-if="curio.wslsData.has_script" class="anchorscript-container">
                <h4>Anchor Script</h4>
-               <img :src="wslsData.thumb_url"/>
+               <img :src="curio.wslsData.thumb_url"/>
                <div class="anchorscript-links">
-                  <a :href="wslsData.pdf_url" target="_blank">View anchor script PDF in new tab</a>
-                  <a :href="wslsData.transcript_url" target="_blank">View anchor script transcription in new tab</a>
+                  <a :href="curio.wslsData.pdf_url" target="_blank">View anchor script PDF in new tab</a>
+                  <a :href="curio.wslsData.transcript_url" target="_blank">View anchor script transcription in new tab</a>
                </div>
              </div>
          </div>
@@ -44,159 +44,148 @@
    </div>
 </template>
 
-<script>
-import { mapState } from "vuex"
-export default {
-   name: "Viewer",
-   computed: {
-      ...mapState({
-         working : state => state.working,
-         iiifURL: state => state.iiifURL,
-         pagePIDs: state => state.pagePIDs,
-         rightsURL: state => state.rightsURL,
-         startPage: state => state.startPage,
-         viewType: state => state.viewType,
-         wslsData: state => state.wslsData,
-      })
-   },
-   data: function() {
-      return {
-         lastParams: "",
-         tgtDomain: "",
-         intervalID: -1
-      }
-   },
-   async created() {
-      let testQ = Object.assign({}, this.$route.query)
-      let changed = false
-      let pid = this.$route.params.pid
-      let page = this.$route.query.page
-      let unitID = this.$route.query.unit
-      if (!page) page = "1"
-      this.tgtDomain = this.$route.query.domain
-      if (this.tgtDomain) {
-         delete testQ.domain
+<script setup>
+import { useCurioStore } from "@/stores/curio"
+import { onMounted, ref, nextTick, onBeforeUnmount } from "vue"
+import { useRoute } from "vue-router"
+
+const curio = useCurioStore()
+const route = useRoute()
+
+const lastParams = ref("")
+const tgtDomain = ref("")
+const intervalID = ref(-1)
+
+onMounted( async () => {
+   let testQ = Object.assign({}, route.query)
+   let changed = false
+   let pid = route.params.pid
+   let page = route.query.page
+   let unitID = route.query.unit
+   if (!page) page = "1"
+   tgtDomain.value = route.query.domain
+   if (tgtDomain.value) {
+      delete testQ.domain
+      changed = true
+   }
+   await curio.getPIDViewData(pid, page, unitID)
+   window.tifyOptions = {
+      container: '#tify-viewer',
+      immediateRender: false,
+      manifest: curio.iiifURL,
+      stylesheet: '/tify_mods.css',
+      title: null,
+   }
+   await import ('tify/dist/tify.css')
+   await import ('tify/dist/tify.js')
+
+   nextTick( ()=> {
+      let url = window.location.href
+      if ( url.includes.tify ) {
+         if (curio.startPage > 1) {
+            delete testQ.page
+            delete testQ.tify
+            changed = true
+            let tify = {pages: [curio.startPage]}
+            testQ.tify = JSON.stringify(tify)
+         }
+      } else if (url.includes("?")) {
+         // convert generic query params x,y,zoom,rotation,page into tify object
+         let qs = url.split("?")[1]
+         let tify = {view: "info"}
+         let bits = qs.split("&")
+         bits.forEach( p => {
+            let data = p.split("=")
+            if ( data[0] == "x") {
+               tify.panX = data[1]
+            } else if ( data[0] == "y") {
+               tify.panY = data[1]
+            } else if ( data[0] == "zoom") {
+               tify.zoom = data[1]
+            } else if ( data[0] == "rotation") {
+               tify.rotation = data[1]
+            } else if ( data[0] == "page") {
+               tify.pages = [ parseInt(data[1],10) ]
+            }
+         })
+         delete testQ.x
+         delete testQ.y
+         delete testQ.zoom
+         delete testQ.rotation
+         delete testQ.page
+         testQ.tify = JSON.stringify(tify)
          changed = true
       }
-      await this.$store.dispatch("getPIDViewData", {pid: pid, page: page, unit: unitID})
-      window.tifyOptions = {
-         container: '#tify-viewer',
-         immediateRender: false,
-         manifest: this.iiifURL,
-         stylesheet: '/tify_mods.css',
-         title: null,
+
+      if ( changed) {
+         history.replaceState(null, null, "?tify="+testQ.tify)
       }
-      await import ('tify/dist/tify.css')
-      await import ('tify/dist/tify.js')
 
-      this.$nextTick( ()=> {
-         let url = window.location.href
-         if ( url.includes.tify ) {
-            if (this.startPage > 1) {
-               delete testQ.page
-               delete testQ.tify
-               changed = true
-               let tify = {pages: [this.startPage]}
-               testQ.tify = JSON.stringify(tify)
-            }
-         } else if (url.includes("?")) {
-            // convert generic query params x,y,zoom,rotation,page into tify object
-            let qs = url.split("?")[1]
-            let tify = {view: "info"}
-            let bits = qs.split("&")
-            bits.forEach( p => {
-               let data = p.split("=")
-               if ( data[0] == "x") {
-                  tify.panX = data[1]
-               } else if ( data[0] == "y") {
-                  tify.panY = data[1]
-               } else if ( data[0] == "zoom") {
-                  tify.zoom = data[1]
-               } else if ( data[0] == "rotation") {
-                  tify.rotation = data[1]
-               } else if ( data[0] == "page") {
-                  tify.pages = [ parseInt(data[1],10) ]
-               }
-            })
-            delete testQ.x
-            delete testQ.y
-            delete testQ.zoom
-            delete testQ.rotation
-            delete testQ.page
-            testQ.tify = JSON.stringify(tify)
-            changed = true
-         }
-
-         if ( changed) {
-            history.replaceState(null, null, "?tify="+testQ.tify)
-         }
-
-        if ( this.tgtDomain && this.tgtDomain != "" && this.tgtDomain != "*") {
-            this.intervalID = setInterval( this.changeParam, 1000)
-         }
-      })
-   },
-   beforeUnmount() {
-      if ( this.intervalID > -1) {
-         clearInterval(this.intervalID)
-         this.intervalID = -1
+      if ( tgtDomain.value && tgtDomain.value != "" && tgtDomain.value != "*") {
+         intervalID.value = setInterval( changeParam, 1000)
       }
-   },
-   methods: {
-      changeParam() {
-         let url = window.location.href
-         let qs = url.split("?")[1]
-         if (qs && qs != this.lastParams) {
-            this.lastParams = qs
-            if (qs.includes("tify=")) {
-               // this is tiffy changing the URL itself. The params are a json pbject named tify.
-               // remove tify= and parse the remainder into a json object
-               let dataStr = qs.substring(5)
-               let obj = JSON.parse( decodeURIComponent(dataStr))
-               if ( obj.panX || obj.panY || obj.zoom || obj.pages || obj.rotation) {
-                  let evt = {name: "curio"}
-                  if ( obj.panX ) {
-                     evt.x = obj.panX
-                  }
-                  if ( obj.panY ) {
-                     evt.y = obj.panY
-                  }
-                  if ( obj.zoom) {
-                     evt.zoom = obj.zoom
-                  }
-                  if ( obj.rotation) {
-                     evt.rotation = obj.rotation
-                  }
-                  if (obj.pages) {
-                     evt.page=obj.pages[0]
-                  }
-                  // console.log(evt)
-                  window.top.postMessage(evt, this.tgtDomain)
-               } else {
-                  // console.log("not data")
-               }
+   })
+})
+
+onBeforeUnmount(()=>{
+   if ( intervalID.value > -1) {
+      clearInterval(intervalID.value)
+      intervalID.value = -1
+   }
+})
+
+function changeParam() {
+   let url = window.location.href
+   let qs = url.split("?")[1]
+   if (qs && qs != lastParams.value) {
+      lastParams.value = qs
+      if (qs.includes("tify=")) {
+         // this is tiffy changing the URL itself. The params are a json pbject named tify.
+         // remove tify= and parse the remainder into a json object
+         let dataStr = qs.substring(5)
+         let obj = JSON.parse( decodeURIComponent(dataStr))
+         if ( obj.panX || obj.panY || obj.zoom || obj.pages || obj.rotation) {
+            let evt = {name: "curio"}
+            if ( obj.panX ) {
+               evt.x = obj.panX
             }
-         }
-      },
-      downloadImage() {
-         let page = 0
-         let url = new URL(window.location.href)
-         let tifyParamsStr = url.searchParams.get("tify")
-         if (tifyParamsStr && tifyParamsStr.length > 0) {
-            let tifyParams = JSON.parse(tifyParamsStr)
-            if (tifyParams.pages) {
-               page = tifyParams.pages[0]-1
+            if ( obj.panY ) {
+               evt.y = obj.panY
             }
+            if ( obj.zoom) {
+               evt.zoom = obj.zoom
+            }
+            if ( obj.rotation) {
+               evt.rotation = obj.rotation
+            }
+            if (obj.pages) {
+               evt.page=obj.pages[0]
+            }
+            // console.log(evt)
+            window.top.postMessage(evt, tgtDomain.value)
+         } else {
+            // console.log("not data")
          }
-         let tgtPID =  this.pagePIDs[page]
-         let dlURL = `${this.rightsURL}/${tgtPID}`
-         var link = document.createElement('a')
-         link.href = dlURL+"?download=1"
-         document.body.appendChild(link)
-         link.click()
-         document.body.removeChild(link)
       }
    }
+}
+function downloadImage() {
+   let page = 0
+   let url = new URL(window.location.href)
+   let tifyParamsStr = url.searchParams.get("tify")
+   if (tifyParamsStr && tifyParamsStr.length > 0) {
+      let tifyParams = JSON.parse(tifyParamsStr)
+      if (tifyParams.pages) {
+         page = tifyParams.pages[0]-1
+      }
+   }
+   let tgtPID =  curio.pagePIDs[page]
+   let dlURL = `${curio.rightsURL}/${tgtPID}`
+   var link = document.createElement('a')
+   link.href = dlURL+"?download=1"
+   document.body.appendChild(link)
+   link.click()
+   document.body.removeChild(link)
 }
 </script>
 

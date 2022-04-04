@@ -16,17 +16,22 @@ export default defineConfig({
       port: 8080,
       proxy: {
          '/api': {
-            target: process.env.CURIO_SRV, // export V4_CONFIG=http://localhost:8095
+            target: process.env.CURIO_SRV, // export CURIO_SRV=http://localhost:8185
+            changeOrigin: true,
+            logLevel: 'debug'
+          },
+          '/oembed': {
+            target: process.env.CURIO_SRV,
             changeOrigin: true,
             logLevel: 'debug'
           },
           '/healthcheck': {
-            target: process.env.V4_CONFIG,
+            target: process.env.CURIO_SRV,
             changeOrigin: true,
             logLevel: 'debug'
           },
           '/version': {
-            target: process.env.V4_CONFIG,
+            target: process.env.CURIO_SRV,
             changeOrigin: true,
             logLevel: 'debug'
           },

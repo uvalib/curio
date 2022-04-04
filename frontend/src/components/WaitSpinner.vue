@@ -1,48 +1,39 @@
 <template>
-   <div v-if="overlay" class="spinner-overlay">
+   <div v-if="props.overlay" class="spinner-overlay">
       <div class="spinner">
-         <h3 v-if="message">{{message}}</h3>
+         <h3 v-if="props.message">{{props.message}}</h3>
          <div class="spinner-animation">
-            <div class="bounce1" :style="{backgroundColor: color}"></div>
-            <div class="bounce2" :style="{backgroundColor: color}"></div>
-            <div class="bounce3" :style="{backgroundColor: color}"></div>
+            <div class="bounce1" :style="{backgroundColor: props.color}"></div>
+            <div class="bounce2" :style="{backgroundColor: props.color}"></div>
+            <div class="bounce3" :style="{backgroundColor: props.color}"></div>
          </div>
       </div>
    </div>
    <div v-else class="spinner embed">
-      <h3 v-if="message">{{message}}</h3>
+      <h3 v-if="props.message">{{props.message}}</h3>
       <div class="spinner-animation">
-         <div class="bounce1" :style="{backgroundColor: color}"></div>
-         <div class="bounce2" :style="{backgroundColor: color}"></div>
-         <div class="bounce3" :style="{backgroundColor: color}"></div>
+         <div class="bounce1" :style="{backgroundColor: props.color}"></div>
+         <div class="bounce2" :style="{backgroundColor: props.color}"></div>
+         <div class="bounce3" :style="{backgroundColor: props.color}"></div>
       </div>
    </div>
 </template>
 
-<script>
-export default {
-   name: "WaitSpinner",
-   props: {
-      message: {
-         type: String,
-         default: ""
-      },
-      overlay: {
-         type: Boolean,
-         default: false
-      },
-      color: {
-         type: String,
-         default: "var(--uvalib-brand-orange)"
-      }
+<script setup>
+const props = defineProps({
+   message: {
+      type: String,
+      default: ""
    },
-   computed: {
-      backgroundColor() {
-         if ( this.transparent) return "transparent"
-         return "white"
-      }
+   overlay: {
+      type: Boolean,
+      default: false
+   },
+   color: {
+      type: String,
+      default: "var(--uvalib-brand-orange)"
    }
-}
+})
 </script>
 
 <style lang="scss" scoped>
