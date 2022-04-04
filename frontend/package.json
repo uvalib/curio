@@ -1,19 +1,16 @@
 {
   "name": "viewer",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5050",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
     "@vue/compat": "^3.1.0",
     "axios": "^0.21.1",
-    "core-js": "^3.6.5",
-    "sass": "^1.33.0",
-    "sass-loader": "^10",
     "tify": "^0.24.2",
     "video.js": "^7.11.8",
     "vue": "^3.1.0",
@@ -21,15 +18,10 @@
     "vuex": "^4.0.0-0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.4",
-    "@vue/cli-plugin-eslint": "~5.0.4",
-    "@vue/cli-plugin-router": "~5.0.4",
-    "@vue/cli-plugin-vuex": "~5.0.4",
-    "@vue/cli-service": "~5.0.4",
-    "@vue/compiler-sfc": "^3.1.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "@vitejs/plugin-vue": "^2.2.2",
+    "eslint": "^8.5.0",
+    "eslint-plugin-vue": "^8.2.0",
+    "sass": "^1.49.9",
+    "vite": "^2.8.4"
   }
 }
