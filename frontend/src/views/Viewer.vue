@@ -136,7 +136,7 @@ export default {
          }
       })
    },
-   beforeDestroy() {
+   beforeUnmount() {
       if ( this.intervalID > -1) {
          clearInterval(this.intervalID)
          this.intervalID = -1

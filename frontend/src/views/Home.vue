@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import UvaLibraryLogo from "@/components/UvaLibraryLogo"
+import UvaLibraryLogo from "@/components/UvaLibraryLogo.vue"
 export default {
    name: "Home",
    components: {

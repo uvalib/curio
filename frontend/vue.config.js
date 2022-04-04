@@ -3,28 +3,25 @@
 //    https://github.com/chimurai/http-proxy-middleware#proxycontext-config
 module.exports = {
   devServer: {
-    // public: process.env.BASE_URL,
     host: '0.0.0.0',
-    public: '0.0.0.0:8080',
-    disableHostCheck: true,
     proxy: {
       '/api': {
-        target: process.env.CURIO_SRV, // or 'http://localhost:8085',
+        target: process.env.CURIO_SRV, // export CURIO_SRV=http://localhost:8185
         changeOrigin: true,
         logLevel: 'debug'
       },
       '/oembed': {
-        target: process.env.CURIO_SRV, // or 'http://localhost:8085',
+        target: process.env.CURIO_SRV,
         changeOrigin: true,
         logLevel: 'debug'
       },
       '/version': {
-        target: process.env.CURIO_SRV, // or 'http://localhost:8085',
+        target: process.env.CURIO_SRV,
         changeOrigin: true,
         logLevel: 'debug'
       },
       '/healthcheck': {
-        target: process.env.CURIO_SRV, // or 'http://localhost:8085',
+        target: process.env.CURIO_SRV,
         changeOrigin: true,
         logLevel: 'debug'
       },
@@ -36,5 +33,5 @@ module.exports = {
       maxEntrypointSize: 1024000,
       maxAssetSize: 1024000
     }
-  }
+  },
 }
