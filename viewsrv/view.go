@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -44,6 +45,15 @@ func viewHandler(c *gin.Context) {
 	if err == nil {
 		log.Printf("INFO: render %s as WSLS", srcPID)
 		viewWSLS(c, wslsData)
+		return
+	}
+
+	// Check Archivematica
+	log.Printf("INFO: %s is not WSLS; Checking Archivematica", srcPID)
+	archivematicaData, err := getArchivematicaData(srcPID)
+	if err == nil {
+		log.Printf("INFO: render %s as Archivematica", srcPID)
+		c.JSON(http.StatusOK, archivematicaData)
 		return
 	}
 
@@ -141,4 +151,120 @@ func getIIIFManifestURL(pid string, unit string) (string, error) {
 	}
 	log.Printf("INFO: IIIF manifest cached at %s", parsed.URL)
 	return parsed.URL, nil
+}
+
+// ArchivematicaS3Node format for archivematica in s3
+// Can be arbitrarily nested
+type ArchivematicaS3Node struct {
+	Name       string `json:"name,omitempty"`
+	ID         string `json:"id,omitempty"`
+	Type       string `json:"type,omitempty"`
+	Format     string `json:"format,omitempty"`
+	SourceURL  string `json:"source_url,omitempty"`
+	DisplayURL string `json:"display_url,omitempty"`
+	MimeType   string `json:"mime_types,omitempty"`
+	View       string `json:"view,omitempty"`
+
+	Entries []ArchivematicaS3Node `json:"entries,omitempty"`
+}
+
+// TableNode format for PrimeVue TreeTable
+// https://www.primefaces.org/primevue/treetable
+type TableNode struct {
+	Key        string      `json:"key"`
+	Data       ColumnData  `json:"data"`
+	Children   []TableNode `json:"children,omitempty"`
+	StyleClass string      `json:"styleClass,omitempty"`
+	//Leaf bool `json:"leaf"`
+}
+
+// ColumnData contains data to be displayed
+type ColumnData struct {
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Format string `json:"format"`
+	Icon   string `json:"icon"`
+	URL    string `json:"url"`
+}
+
+func getArchivematicaData(pid string) (viewResponse, error) {
+
+	// Future S3 retrieval
+	//resp, err := getS3Response(config.archivematicaS3Bucket, pid)
+	//if err != nil {
+	//	return "", err
+	//}
+	ArchivematicaResponse := viewResponse{Type: "archivematica"}
+
+	// Test item only
+	if pid != "12d79f61-3d26-43fb-abb8-352b7f0e1602" {
+		return ArchivematicaResponse, errors.New("manifest not found")
+	}
+
+	// Begin temp file load
+	Resp, err := ioutil.ReadFile("./example3.json")
+	if err != nil {
+		log.Fatal("Error when opening file: ", err)
+	}
+	//end temp file load
+
+	var S3Format ArchivematicaS3Node
+	err = json.Unmarshal(Resp, &S3Format)
+	if err != nil {
+		log.Fatal("Error during Unmarshal(): ", err)
+	}
+
+	// Convert to TreeNode
+
+	ArchivematicaResponse.Data = transformNode(S3Format, 0)
+
+	return ArchivematicaResponse, nil
+}
+
+// transformNode resursively converts the archivematica tree from S3 format to TreeNode
+func transformNode(s3Node ArchivematicaS3Node, depth int) TableNode {
+	var node TableNode
+	var data ColumnData
+
+	if len(s3Node.ID) > 0 {
+		node.Key = fmt.Sprintf("%d-%s", depth, s3Node.ID)
+	} else {
+		node.Key = fmt.Sprintf("%d-%s", depth, s3Node.Name)
+	}
+	data.Name = s3Node.Name
+	data.Type = s3Node.Type
+
+	switch s3Node.Type {
+	case "folder":
+		data.Icon = "fa fa-folder"
+		data.Format = "Folder"
+	case "file":
+		data.Icon = "fa fa-file"
+		data.Format = s3Node.Format
+		data.URL = s3Node.SourceURL
+	}
+
+	switch s3Node.View {
+	case "image":
+		data.Type = "image"
+		data.Icon = "fa fa-file-image"
+	}
+
+	switch {
+	case strings.Contains(s3Node.Format, "PDF"):
+		data.Icon = "fa fa-file-pdf"
+	case strings.Contains(s3Node.Format, "Word"):
+		data.Icon = "fa fa-file-word"
+	case strings.Contains(s3Node.Format, "Excel"):
+		data.Icon = "fa fa-file-excel"
+	}
+
+	node.Data = data
+
+	//recursively transform children
+	for _, s3Child := range s3Node.Entries {
+		node.Children = append(node.Children, transformNode(s3Child, depth+1))
+	}
+
+	return node
 }

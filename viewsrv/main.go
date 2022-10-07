@@ -19,6 +19,7 @@ func main() {
 	// Load cfg
 	log.Printf("===> Curio is staring up <===")
 	getConfiguration()
+	initS3()
 
 	// Set routes and start server
 	gin.SetMode(gin.ReleaseMode)

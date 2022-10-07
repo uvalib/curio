@@ -9,6 +9,12 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 // This is a minimal mapping of the apollo items API request to the
@@ -122,6 +128,54 @@ func httpClientWithTimeouts(connTimeout int, readTimeout int) *http.Client {
 	}
 
 	return client
+}
+
+// s3Config contains methods for accessing s3
+type s3Config struct {
+	service    *s3.S3
+	downloader *s3manager.Downloader
+}
+
+// s3Session contains the active s3 session
+var s3Session s3Config
+
+func initS3() {
+	sess, err := session.NewSession()
+	if err == nil {
+		s3Session.service = s3.New(sess)
+		s3Session.downloader = s3manager.NewDownloader(sess)
+	}
+}
+
+func getS3Response(bucket string, key string) ([]byte, error) {
+
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	}
+
+	buffer := &aws.WriteAtBuffer{}
+	_, err := s3Session.downloader.Download(buffer, input)
+
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
+			case s3.ErrCodeInvalidObjectState:
+				fmt.Println(s3.ErrCodeInvalidObjectState, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+			return nil, aerr
+		}
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }
 
 //

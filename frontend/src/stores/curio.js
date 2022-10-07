@@ -11,6 +11,7 @@ export const useCurioStore = defineStore('curio', {
       startPage: 0,
       PID: "",
       wslsData: {},
+      archivematicaData: {},
       failed: false
    }),
    actions: {
@@ -27,6 +28,8 @@ export const useCurioStore = defineStore('curio', {
             this.startPage = data.page
          } else if (resp.type == 'wsls') {
             this.wslsData = data
+         } else if (resp.type == 'archivematica') {
+            this.archivematicaData = [data].flat()
          }
       },
 

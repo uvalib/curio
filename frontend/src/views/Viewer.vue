@@ -37,6 +37,9 @@
                </div>
              </div>
          </div>
+         <div v-else-if="curio.viewType==='archivematica'">
+               <TreeViewer :treeData="curio.archivematicaData"/>
+         </div>
          <div v-else class="not-found">
             <h2>Sorry, but the resource you requested could not be found.</h2>
          </div>
@@ -48,6 +51,7 @@
 import { useCurioStore } from "@/stores/curio"
 import { onMounted, ref, nextTick, onBeforeUnmount } from "vue"
 import { useRoute } from "vue-router"
+import  TreeViewer  from "@/components/TreeViewer.vue";
 
 const curio = useCurioStore()
 const route = useRoute()
