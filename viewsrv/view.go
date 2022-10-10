@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -188,28 +187,18 @@ type ColumnData struct {
 }
 
 func getArchivematicaData(pid string) (viewResponse, error) {
-
-	// Future S3 retrieval
-	//resp, err := getS3Response(config.archivematicaS3Bucket, pid)
-	//if err != nil {
-	//	return "", err
-	//}
 	ArchivematicaResponse := viewResponse{Type: "archivematica"}
 
-	// Test item only
-	if pid != "12d79f61-3d26-43fb-abb8-352b7f0e1602" {
-		return ArchivematicaResponse, errors.New("manifest not found")
-	}
+	// S3 retrieval
+	fileName := fmt.Sprintf("%s.json", pid)
 
-	// Begin temp file load
-	Resp, err := ioutil.ReadFile("./example3.json")
+	resp, err := getS3Response(config.archivematicaBucket, fileName)
 	if err != nil {
-		log.Fatal("Error when opening file: ", err)
+		return ArchivematicaResponse, err
 	}
-	//end temp file load
 
 	var S3Format ArchivematicaS3Node
-	err = json.Unmarshal(Resp, &S3Format)
+	err = json.Unmarshal(resp, &S3Format)
 	if err != nil {
 		log.Fatal("Error during Unmarshal(): ", err)
 	}
