@@ -13,13 +13,14 @@
   >
     <Column field="name" header="Name" :expander="true"
       filterMatchMode="contains"
+      bodyClass="name-cell"
       >
       <template #filter>
         <InputText type="text" v-model="tableFilters['name']" class="p-column-filter" placeholder="Filter by name" />
       </template>
       <template #body="slotProps">
-        <span>{{slotProps.node.data.name}}</span>
-
+        <div class="marker"></div>
+        <p>{{slotProps.node.data.name}}</p>
       </template>
     </Column>
 
@@ -117,7 +118,7 @@ function expandNode(node) {
 
 </script>
 <style lang="scss">
-.p-treetable-tbody {
+#app .p-treetable-tbody {
   .format-label {
     i.fa {
       padding-right: 5px;
@@ -125,6 +126,27 @@ function expandNode(node) {
   }
   .preview-img>img {
     max-width: 100%;
+  }
+
+  td {
+    padding: 0 0 0 5px;
+  }
+  .name-cell {
+    padding-left: 0;
+
+    button.p-treetable-toggler {
+      margin-right: 2px;
+    }
+
+    .marker {
+      border-left: 2px solid #e9ecef;
+      display: inline;
+      padding: 100% 0 100% 5px;
+    }
+    p {
+      background: white;
+      display: inline;
+    }
   }
 }
 .p-filter-column .p-buttonset button {
