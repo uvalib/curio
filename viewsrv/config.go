@@ -24,7 +24,7 @@ func getConfiguration() {
 	flag.StringVar(&config.iiifURL, "iiif", "https://iiifman.lib.virginia.edu", "IIIF manifest URL")
 	flag.StringVar(&config.wslsURL, "fedora", "https://wsls.lib.virginia.edu", "WSLS Fedora URL")
 	flag.StringVar(&config.rightsURL, "rights", "https://rights-wrapper.lib.virginia.edu/api/pid", "Rights wrapper URL")
-	flag.StringVar(&config.archivematicaBucket, "archivematicaBucket", "archivematica-curio", "Archivematica S3 Bucket")
+	flag.StringVar(&config.archivematicaBucket, "archivematicaBucket", "archivematica-curio-staging", "Archivematica S3 Bucket")
 	flag.StringVar(&config.hostname, "host", "curio.lib.virginia.edu", "Curio hostname")
 	flag.Parse()
 
