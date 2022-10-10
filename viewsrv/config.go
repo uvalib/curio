@@ -6,13 +6,13 @@ import (
 )
 
 type configData struct {
-	port                  int
-	apolloURL             string
-	iiifURL               string
-	wslsURL               string
-	hostname              string
-	rightsURL             string
-	archivematicaS3Bucket string
+	port                int
+	apolloURL           string
+	iiifURL             string
+	wslsURL             string
+	hostname            string
+	rightsURL           string
+	archivematicaBucket string
 }
 
 // globals for the CFG
@@ -24,7 +24,7 @@ func getConfiguration() {
 	flag.StringVar(&config.iiifURL, "iiif", "https://iiifman.lib.virginia.edu", "IIIF manifest URL")
 	flag.StringVar(&config.wslsURL, "fedora", "https://wsls.lib.virginia.edu", "WSLS Fedora URL")
 	flag.StringVar(&config.rightsURL, "rights", "https://rights-wrapper.lib.virginia.edu/api/pid", "Rights wrapper URL")
-	flag.StringVar(&config.archivematicaS3Bucket, "archivematicaBucket", "", "Archivematica S3 Bucket")
+	flag.StringVar(&config.archivematicaBucket, "archivematicaBucket", "archivematica-curio-staging", "Archivematica S3 Bucket")
 	flag.StringVar(&config.hostname, "host", "curio.lib.virginia.edu", "Curio hostname")
 	flag.Parse()
 
@@ -33,7 +33,7 @@ func getConfiguration() {
 	log.Printf("[CONFIG] iiifURL               = [%s]", config.iiifURL)
 	log.Printf("[CONFIG] wslsURL               = [%s]", config.wslsURL)
 	log.Printf("[CONFIG] rightsURL             = [%s]", config.rightsURL)
-	log.Printf("[CONFIG] archivematicaS3Bucket = [%s]", config.archivematicaS3Bucket)
+	log.Printf("[CONFIG] archivematicaBucket   = [%s]", config.archivematicaBucket)
 	log.Printf("[CONFIG] hostname              = [%s]", config.hostname)
 }
 

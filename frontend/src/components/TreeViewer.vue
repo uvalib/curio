@@ -119,15 +119,15 @@ function expandNode(node) {
 <style lang="scss">
 .p-treetable-tbody {
   .format-label {
-
-
     i.fa {
       padding-right: 5px;
     }
   }
-
   .preview-img>img {
     max-width: 100%;
   }
+}
+.p-filter-column .p-buttonset button {
+  margin-top: 3px;
 }
 </style>

@@ -161,7 +161,7 @@ func getS3Response(bucket string, key string) ([]byte, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
+				fmt.Println("S3: " + s3.ErrCodeNoSuchKey)
 			case s3.ErrCodeInvalidObjectState:
 				fmt.Println(s3.ErrCodeInvalidObjectState, aerr.Error())
 			default:
