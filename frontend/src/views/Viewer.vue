@@ -19,8 +19,13 @@
             <div v-if="curio.wslsData.has_video" class="video-container" >
                <video class="video-js vjs-default-skin vjs-big-play-centered vjs-fluid" controls preload="auto"
                   :poster="curio.wslsData.poster_url" data-setup='{"inactivityTimeout": 0}'
+                  crossorigin="anonymous"
                >
                   <source :src="curio.wslsData.video_url" type='video/mp4'>
+                  <track kind="subtitles"
+                     :src="curio.wslsData.video_url.replace(/\.[^/.]+$/, '.vtt')"
+                     label="English" srclang="en"
+                  />
                   <p class="vjs-no-js">
                      To view this video please enable JavaScript, and consider upgrading to a web browser that
                      <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
