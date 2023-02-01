@@ -134,11 +134,7 @@ onMounted( async () => {
          intervalID.value = setInterval( changeParam, 1000)
       }
 
-      const parentMessage = JSON.stringify({
-         height: document.documentElement.offsetHeight + 'px',
-         width: document.body.scrollWidth + 'px',
-      });
-      window.parent.postMessage(parentMessage,"*");
+      setTimeout(dimensionsMessage, 500);
    })
 })
 
@@ -148,6 +144,16 @@ onBeforeUnmount(()=>{
       intervalID.value = -1
    }
 })
+
+function dimensionsMessage(){
+   const message = {
+      dimensions: {
+         height: document.documentElement.offsetHeight + 'px',
+         width: document.body.scrollWidth + 'px',
+      }
+   };
+   window.top.postMessage(message, tgtDomain.value)
+}
 
 function changeParam() {
    let url = window.location.href
