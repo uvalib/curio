@@ -133,6 +133,12 @@ onMounted( async () => {
       if ( tgtDomain.value && tgtDomain.value != "" && tgtDomain.value != "*") {
          intervalID.value = setInterval( changeParam, 1000)
       }
+
+      const parentMessage = JSON.stringify({
+         height: document.documentElement.offsetHeight + 'px',
+         width: document.body.scrollWidth + 'px',
+      });
+      window.parent.postMessage(parentMessage,"*");
    })
 })
 
