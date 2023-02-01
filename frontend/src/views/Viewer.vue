@@ -241,8 +241,10 @@ function downloadImage() {
 }
 .wsls {
    max-width: 640px;
-   min-width: 410px;
    margin: 0 auto;
+   video {
+      width: 100%;
+   }
    .overview {
       text-align: left;
       h3 {
