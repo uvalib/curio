@@ -148,7 +148,7 @@ onBeforeUnmount(()=>{
 function dimensionsMessage(){
    const message = {
       dimensions: {
-         height: document.documentElement.offsetHeight + 'px',
+         height: document.documentElement.scrollHeight + 'px',
          width: document.body.scrollWidth + 'px',
       }
    };
