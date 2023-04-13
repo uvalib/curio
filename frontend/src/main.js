@@ -7,7 +7,7 @@ import TreeTable from 'primevue/treetable'
 import Column from 'primevue/column'
 import Image from 'primevue/image'
 import InputText from 'primevue/inputtext'
-import Button from 'primevue/button';
+import Button from 'primevue/button'
 
 import WaitSpinner from "@/components/WaitSpinner.vue"
 

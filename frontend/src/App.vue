@@ -1,7 +1,5 @@
 <template>
-  <div id="app">
-    <router-view/>
-  </div>
+   <router-view/>
 </template>
 
 <style lang="scss">
@@ -71,9 +69,11 @@
    margin: 0;
    padding: 0;
    background: white;
+   height: 100%;
 }
-body {
+html, body {
    margin:0;
    padding: 0;
+   height: 100%;
 }
 </style>

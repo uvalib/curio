@@ -3,13 +3,7 @@
       <WaitSpinner v-if="curio.working" :overlay="true" message="Loading viewer..." />
       <template v-else>
          <template v-if="curio.viewType=='iiif'">
-            <div id="tify-viewer"></div>
-            <div class="extra-tools">
-               <span class="image-download" @click="downloadImage">
-                  <i class="fas fa-download"></i>
-                  <span class="dl-text">Download image</span>
-               </span>
-            </div>
+            <div id="tify-viewer" style="height:100%;"></div>
          </template>
          <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
@@ -54,88 +48,73 @@
 
 <script setup>
 import { useCurioStore } from "@/stores/curio"
-import { onMounted, ref, nextTick, onBeforeUnmount } from "vue"
-import { useRoute } from "vue-router"
-import  TreeViewer  from "@/components/TreeViewer.vue";
+import { onMounted, ref, onBeforeUnmount } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import  TreeViewer  from "@/components/TreeViewer.vue"
+
+import 'tify'
+import 'tify/dist/tify.css'
 
 const curio = useCurioStore()
 const route = useRoute()
+const router = useRouter()
 
-const lastParams = ref("")
 const tgtDomain = ref("")
 const intervalID = ref(-1)
+const viewer = ref(null)
 
 onMounted( async () => {
-   let testQ = Object.assign({}, route.query)
-   let changed = false
    let pid = route.params.pid
    let page = route.query.page
    let unitID = route.query.unit
    if (!page) page = "1"
-   tgtDomain.value = route.query.domain
-   if (tgtDomain.value) {
-      delete testQ.domain
-      changed = true
-   }
+
    await curio.getPIDViewData(pid, page, unitID)
-   window.tifyOptions = {
-      container: '#tify-viewer',
-      immediateRender: false,
-      manifest: curio.iiifURL,
-      stylesheet: '/tify_mods.css',
-      title: null,
+
+   // the domain param is the transport and host of the parent window.
+   // it is used to post messages from the viewer iFrame to the parent so the URL can be
+   // updated to reflect image settings and viewer size.
+   tgtDomain.value = route.query.domain
+
+   if ( curio.viewType == 'iiif' ) {
+      let pages = null
+      let zoom = null
+      let rotation = null
+      let pan = {}
+      if (route.query.page) {
+         pages = [parseInt(route.query.page,10)]
+      }
+      if (route.query.zoom) {
+         zoom = parseFloat(route.query.zoom)
+      }
+      if (route.query.rotation) {
+         rotation = parseInt(route.query.rotation, 10)
+      }
+      if (route.query.x) {
+         pan.x = parseFloat(route.query.x)
+      }
+      if (route.query.y) {
+         pan.y = parseFloat(route.query.y)
+      }
+
+      viewer.value = new Tify({
+         manifestUrl: curio.iiifURL,
+         optionsResetOnPageChange: [],
+         pages: pages,
+         zoom: zoom,
+         pan: pan,
+         rotation: rotation,
+         viewer: {
+            immediateRender: false,
+         },
+      })
+      viewer.value.mount('#tify-viewer')
+      intervalID.value = setInterval( changeParam, 1000)
    }
-   await import ('tify/dist/tify.css')
-   await import ('tify/dist/tify.js')
 
-   nextTick( ()=> {
-      let url = window.location.href
-      if ( url.includes.tify ) {
-         if (curio.startPage > 1) {
-            delete testQ.page
-            delete testQ.tify
-            changed = true
-            let tify = {pages: [curio.startPage]}
-            testQ.tify = JSON.stringify(tify)
-         }
-      } else if (url.includes("?")) {
-         // convert generic query params x,y,zoom,rotation,page into tify object
-         let qs = url.split("?")[1]
-         let tify = {view: "info"}
-         let bits = qs.split("&")
-         bits.forEach( p => {
-            let data = p.split("=")
-            if ( data[0] == "x") {
-               tify.panX = data[1]
-            } else if ( data[0] == "y") {
-               tify.panY = data[1]
-            } else if ( data[0] == "zoom") {
-               tify.zoom = data[1]
-            } else if ( data[0] == "rotation") {
-               tify.rotation = data[1]
-            } else if ( data[0] == "page") {
-               tify.pages = [ parseInt(data[1],10) ]
-            }
-         })
-         delete testQ.x
-         delete testQ.y
-         delete testQ.zoom
-         delete testQ.rotation
-         delete testQ.page
-         testQ.tify = JSON.stringify(tify)
-         changed = true
-      }
-
-      if ( changed) {
-         history.replaceState(null, null, "?tify="+testQ.tify)
-      }
-
-      if ( tgtDomain.value && tgtDomain.value != "" && tgtDomain.value != "*") {
-         intervalID.value = setInterval( changeParam, 1000)
-      }
-
-      setTimeout(dimensionsMessage, 500);
-   })
+   if ( tgtDomain.value) {
+      setTimeout(dimensionsMessage, 500)
+   }
 })
 
 onBeforeUnmount(()=>{
@@ -143,77 +122,70 @@ onBeforeUnmount(()=>{
       clearInterval(intervalID.value)
       intervalID.value = -1
    }
+   if ( viewer.value ) {
+      viewer.value.destroy()
+   }
 })
 
-function dimensionsMessage(){
+const dimensionsMessage = (() =>{
    const message = {
       dimensions: {
          height: document.documentElement.scrollHeight + 'px',
          width: document.body.scrollWidth + 'px',
       }
-   };
+   }
    window.top.postMessage(message, tgtDomain.value)
-}
+})
 
-function changeParam() {
-   let url = window.location.href
-   let qs = url.split("?")[1]
-   if (qs && qs != lastParams.value) {
-      lastParams.value = qs
-      if (qs.includes("tify=")) {
-         // this is tiffy changing the URL itself. The params are a json pbject named tify.
-         // remove tify= and parse the remainder into a json object
-         let dataStr = qs.substring(5)
-         let obj = JSON.parse( decodeURIComponent(dataStr))
-         if ( obj.panX || obj.panY || obj.zoom || obj.pages || obj.rotation) {
-            let evt = {name: "curio"}
-            if ( obj.panX ) {
-               evt.x = obj.panX
-            }
-            if ( obj.panY ) {
-               evt.y = obj.panY
-            }
-            if ( obj.zoom) {
-               evt.zoom = obj.zoom
-            }
-            if ( obj.rotation) {
-               evt.rotation = obj.rotation
-            }
-            if (obj.pages) {
-               evt.page=obj.pages[0]
-            }
-            // console.log(evt)
-            window.top.postMessage(evt, tgtDomain.value)
-         } else {
-            // console.log("not data")
-         }
+const changeParam = (() => {
+   let opts = viewer.value.options
+   let origQ = route.query
+   let q = Object.assign({}, origQ)
+   delete q.x
+   delete q.y
+   delete q.zoom
+   delete q.rotation
+   delete q.page
+   if (opts.zoom ) {
+      q.zoom = opts.zoom
+   }
+   if (opts.rotation ) {
+      q.rotation = opts.rotation
+   }
+   if (opts.pan ) {
+      q.x = opts.pan.x
+      q.y = opts.pan.y
+   }
+   if ( opts.pages ) {
+      q.page = opts.pages[0]
+   }
+
+   if (q.zoom != origQ.zoom || q.rotation != origQ.rotation || q.x != origQ.x || q.y != origQ.y || q.page != origQ.page ) {
+      router.replace({query: q})
+
+      if ( tgtDomain.value ) {
+         let evt = {name: "curio"}
+         if ( q.x ) evt.x = q.x
+         if (q.y ) evt.y = q.y
+         if ( q.zoom ) evt.zoom = q.zoom
+         if ( q.rotation ) evt.rotation = q.rotation
+         if ( q.page ) evt.page = q.page
+         window.top.postMessage(evt, tgtDomain.value)
       }
    }
-}
-function downloadImage() {
-   let page = 0
-   let url = new URL(window.location.href)
-   let tifyParamsStr = url.searchParams.get("tify")
-   if (tifyParamsStr && tifyParamsStr.length > 0) {
-      let tifyParams = JSON.parse(tifyParamsStr)
-      if (tifyParams.pages) {
-         page = tifyParams.pages[0]-1
-      }
-   }
-   let tgtPID =  curio.pagePIDs[page]
-   let dlURL = `${curio.rightsURL}/${tgtPID}`
-   var link = document.createElement('a')
-   link.href = dlURL+"?download=1"
-   document.body.appendChild(link)
-   link.click()
-   document.body.removeChild(link)
-}
+})
 </script>
 
 <style lang="scss">
-::v-deep .tify-header_column.-controls.-visible  {
-   display: none !important;
+.viewer {
+   height: 100%;
 }
+.-controls {
+   .-view:nth-child(2) {
+      display: none !important;
+   }
+}
+
 .not-found {
    display: inline-block;
    padding: 20px 50px;
@@ -221,22 +193,6 @@ function downloadImage() {
    h2 {
       font-size: 1.5em;
       color: var(--uvalib-text);
-   }
-}
-.extra-tools {
-   z-index: 1000;
-   position: absolute;
-   left: 12px;
-   top: 12px;
-   font-size: 1.1em;
-   color: #222;
-   cursor: pointer;
-   .dl-text {
-      margin-left: 5px;
-      font-weight: 500;
-      &:hover {
-         text-decoration: underline;
-      }
    }
 }
 .wsls {
@@ -278,11 +234,6 @@ function downloadImage() {
             }
          }
       }
-   }
-}
-@media only screen and (max-width: 600px) {
-   .dl-text {
-      display: none;
    }
 }
 </style>

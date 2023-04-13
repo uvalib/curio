@@ -50,6 +50,4 @@ export const useCurioStore = defineStore('curio', {
          })
       }
    },
-   modules: {
-   }
 })
