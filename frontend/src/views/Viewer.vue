@@ -4,6 +4,12 @@
       <template v-else>
          <template v-if="curio.viewType=='iiif'">
             <div id="tify-viewer" style="height:100%;"></div>
+            <div class="extra-tools">
+               <span class="image-download" @click="downloadImage">
+                  <i class="fas fa-download"></i>
+                  <span class="dl-text">Download image</span>
+               </span>
+            </div>
          </template>
          <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
@@ -174,15 +180,55 @@ const changeParam = (() => {
       }
    }
 })
+
+const downloadImage = (() => {
+   let page = 0
+   let url = new URL(window.location.href)
+   let tifyParamsStr = url.searchParams.get("tify")
+   if (tifyParamsStr && tifyParamsStr.length > 0) {
+      let tifyParams = JSON.parse(tifyParamsStr)
+      if (tifyParams.pages) {
+         page = tifyParams.pages[0]-1
+      }
+   }
+   let tgtPID =  curio.pagePIDs[page]
+   let dlURL = `${curio.rightsURL}/${tgtPID}`
+   var link = document.createElement('a')
+   link.href = dlURL+"?download=1"
+   document.body.appendChild(link)
+   link.click()
+   document.body.removeChild(link)
+})
 </script>
 
 <style lang="scss">
 .viewer {
    height: 100%;
 }
+.extra-tools {
+   z-index: 1000;
+   position: absolute;
+   left: 12px;
+   top: 12px;
+   font-size: 1.1em;
+   color: #222;
+   cursor: pointer;
+   .dl-text {
+      margin-left: 5px;
+      font-weight: 500;
+      &:hover {
+         text-decoration: underline;
+      }
+   }
+}
 .-controls {
    .-view:nth-child(2) {
       display: none !important;
+   }
+   .-view:first-of-type {
+     button:last-of-type {
+         display: none !important;
+      }
    }
 }
 
