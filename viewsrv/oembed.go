@@ -18,8 +18,8 @@ type oembed struct {
 	Version     string `json:"version,omitempty" xml:"version,omitempty"`
 	Type        string `json:"type,omitempty" xml:"type,omitempty"`
 	HTML        string `json:"html,omitempty" xml:"html,omitempty"`
-	Width       int    `json:"width,omitempty" xml:"width,omitempty"`
-	Height      int    `json:"height,omitempty" xml:"height,omitempty"`
+	Width       string `json:"width,omitempty" xml:"width,omitempty"`
+	Height      string `json:"height,omitempty" xml:"height,omitempty"`
 	Provider    string `json:"provider,omitempty" xml:"provider,omitempty"`
 	ProviderURL string `json:"provider_url,omitempty" xml:"provider_url,omitempty"`
 }
@@ -36,14 +36,14 @@ func (o *oembed) marshalJSON() string {
 
 // embedImageData is the data needed to render the HTML snippet fot embedded images
 type embedImageData struct {
-	Width  int
-	Height int
+	Width  string
+	Height string
 	URL    string
 }
 
 type embedWSLSData struct {
-	Width     int
-	Height    int
+	Width     string
+	Height    string
 	SourceURI string
 }
 
@@ -144,14 +144,14 @@ func getImageOEmbedData(pid string, unitID string, page int, maxWidth int, maxHe
 	log.Printf("INFO: Target oembed URL: %s", url)
 	imgData.URL = url
 
-	// default embed size is 800x600. Params maxwidth and maxheight can override.
-	imgData.Width = 800
-	if maxWidth > 0 && maxWidth < imgData.Width {
-		imgData.Width = maxWidth
+	// default embed size is 100% x 600px. Params maxwidth and maxheight can override.
+	imgData.Width = "100%"
+	if maxWidth > 0 {
+		imgData.Width = fmt.Sprintf("%dpx", maxWidth)
 	}
-	imgData.Height = 600
-	if maxHeight > 0 && maxHeight < imgData.Height {
-		imgData.Height = maxHeight
+	imgData.Height = "600px"
+	if maxHeight > 0 {
+		imgData.Height = fmt.Sprintf("%dpx", maxHeight)
 	}
 
 	// Render the <div> that will be included in the response, and used to embed the resource
@@ -175,13 +175,13 @@ func getWSLSOEmbedData(tgtURL *url.URL, wslsData *wslsMetadata, maxWidth int, ma
 	var snipData embedWSLSData
 
 	snipData.SourceURI = tgtURL.String()
-	snipData.Width = 670
-	if maxWidth > 0 && maxWidth < snipData.Width {
-		snipData.Width = maxWidth
+	snipData.Width = "670px"
+	if maxWidth > 0 {
+		snipData.Width = fmt.Sprintf("%dpx", maxWidth)
 	}
-	snipData.Height = 800
-	if maxHeight > 0 && maxHeight < snipData.Height {
-		snipData.Height = maxHeight
+	snipData.Height = "800px"
+	if maxHeight > 0 {
+		snipData.Height = fmt.Sprintf("%dpx", maxWidth)
 	}
 
 	log.Printf("INFO: rendering html snippet...")
