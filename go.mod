@@ -3,7 +3,7 @@ module github.com/uvalib/curio
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.44.271 // indirect
+	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/contrib v0.0.0-20221130124618-7e01895a63f2

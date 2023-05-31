@@ -184,13 +184,11 @@ const changeParam = (() => {
 const downloadImage = (() => {
    let page = 0
    let url = new URL(window.location.href)
-   let tifyParamsStr = url.searchParams.get("tify")
-   if (tifyParamsStr && tifyParamsStr.length > 0) {
-      let tifyParams = JSON.parse(tifyParamsStr)
-      if (tifyParams.pages) {
-         page = tifyParams.pages[0]-1
-      }
+   let pageStr = url.searchParams.get("page")
+   if (pageStr && pageStr.length > 0) {
+      page = parseInt(pageStr, 10)-1
    }
+   if (page < 0) page = 0
    let tgtPID =  curio.pagePIDs[page]
    let dlURL = `${curio.rightsURL}/${tgtPID}`
    var link = document.createElement('a')
