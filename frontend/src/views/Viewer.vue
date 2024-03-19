@@ -3,13 +3,10 @@
       <WaitSpinner v-if="curio.working" :overlay="true" message="Loading viewer..." />
       <template v-else>
          <template v-if="curio.viewType=='iiif'">
-            <div id="tify-viewer" style="height:100%;"></div>
-            <div class="extra-tools">
-               <span class="image-download" @click="downloadImage">
-                  <i class="fas fa-download"></i>
-                  <span class="dl-text">Download image</span>
-               </span>
+            <div class="extra-tools" @click="downloadImage"  v-if="curio.viewType=='iiif'">
+               <i class="fas fa-download"></i>
             </div>
+            <div id="tify-viewer" style="height:100%;"></div>
          </template>
          <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
@@ -200,23 +197,47 @@ const downloadImage = (() => {
 </script>
 
 <style lang="scss">
+h3 {
+   text-align: left;
+}
+.tify-info-section.-title {
+   text-align: left;
+}
+div.tify-info-metadata {
+   text-align: left;
+   h4 {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 0.95em;
+   }
+   .tify-info-content {
+      margin-left: 15px;
+      font-size: 0.95em;
+   }
+}
+div.tify-info-section.-logo {
+   border-top: 1px solid #dedede;
+   padding-top:15px;
+   img {
+      margin: 0 auto;
+   }
+}
 .viewer {
    height: 100%;
 }
 .extra-tools {
+   padding: 8px;
    z-index: 1000;
    position: absolute;
-   left: 12px;
-   top: 12px;
-   font-size: 1.1em;
-   color: #222;
+   left: 7px;
+   top: 240px;
+   font-size: 1.25em;
+   color: white;
    cursor: pointer;
-   .dl-text {
-      margin-left: 5px;
-      font-weight: 500;
-      &:hover {
-         text-decoration: underline;
-      }
+   &:hover {
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
+      background: rgba(0, 0, 0, .2);
    }
 }
 .-controls {
