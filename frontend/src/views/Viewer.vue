@@ -3,6 +3,14 @@
       <WaitSpinner v-if="curio.working" :overlay="true" message="Loading viewer..." />
       <template v-else>
          <template v-if="curio.viewType=='iiif'">
+            <template v-if="curio.hasAdvisory">
+               <div class="advisory-dimmer"></div>
+               <div class="advisory">
+                  <span class="icon"></span>
+                  <p>{{  curio.advisory }}</p>
+                  <button @click="curio.clearAdvisory()">Show content</button>
+               </div>
+            </template>
             <div class="extra-tools" @click="downloadImage"  v-if="curio.viewType=='iiif'">
                <i class="fas fa-download"></i>
             </div>
@@ -224,6 +232,54 @@ div.tify-info-section.-logo {
 }
 .viewer {
    height: 100%;
+   position: relative;
+   .advisory-dimmer {
+      position: fixed;
+      top: 55px;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #2b2b2b;
+      z-index: 9999;
+      opacity: 0.9;
+   }
+   .advisory {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      opacity: 1;
+      background: #2b2b2b;
+      max-width: 390px;
+      max-height: 340px;
+      border-radius: 10px;
+      border: 1px solid #F3EC45;
+      z-index: 100000;
+      padding: 25px;
+      .icon {
+         display: block;
+         width: 60px;
+         height: 60px;
+         background-image: url(/src/assets/eye-slash.svg);
+         background-repeat: no-repeat;
+         background-position: center center;
+         margin: 10px auto 20px auto;
+      }
+      p {
+         color: white;
+      }
+      button {
+         margin: 5px 0 20px 0;
+         border-radius:  5px;
+         background-color: #BFE7F7;
+         border: 2px solid #007bac;
+         padding: 0.5rem 1rem;
+         cursor: pointer ;
+         &:hover {
+            background-color: #91d8f2;
+         }
+         // background color: blue-alt-lightest; #BFE7FiCstroke-color:
+      }
+   }
 }
 .extra-tools {
    padding: 8px;

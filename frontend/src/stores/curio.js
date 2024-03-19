@@ -12,8 +12,15 @@ export const useCurioStore = defineStore('curio', {
       PID: "",
       wslsData: {},
       archivematicaData: {},
-      failed: false
+      failed: false,
+      advisoryCleared: false,
+      advisory: "",
    }),
+   getters: {
+      hasAdvisory: state => {
+         return state.advisory != "" && state.advisoryCleared == false
+      }
+   },
    actions: {
       setViewData(resp) {
          let data = resp.data
@@ -33,17 +40,38 @@ export const useCurioStore = defineStore('curio', {
          }
       },
 
+      clearAdvisory() {
+         this.advisoryCleared = true
+      },
+
       async getPIDViewData( pid, page, unit ) {
          this.working =  true
          this.failed = false
+         this.advisory = ""
+         this.advisoryCleared = false
          this.pid = pid
          let url = `/api/view/${pid}?page=${page}`
          if (unit ) {
             url += `&unit=${unit}`
          }
-         await axios.get(url).then(response => {
-            this.setViewData(response.data)
-            this.working = false
+         await axios.get(url).then( async response => {
+            if (response.data.type == "iiif") {
+               let manUrl = response.data.data.iiif
+               let manResp = await axios.get(manUrl)
+               let respMeta = manResp.data.metadata
+               if ( respMeta ) {
+                  respMeta.forEach( m => {
+                     if (m.label == 'Content Advisory') {
+                        this.advisory = m.value
+                     }
+                  })
+               }
+               this.setViewData(response.data)
+               this.working = false
+            } else {
+               this.setViewData(response.data)
+               this.working = false
+            }
          }).catch( () => {
             this.failed = true
             this.working = false

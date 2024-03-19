@@ -99,9 +99,9 @@ func oEmbedHandler(c *gin.Context) {
 	}
 
 	// Nope; try Apollo WSLS:
-	wslsData, err := getApolloWSLSMetadata(pid)
+	_, err = getApolloWSLSMetadata(pid)
 	if err == nil {
-		respData, err := getWSLSOEmbedData(parsedURL, wslsData, maxWidth, maxHeight)
+		respData, err := getWSLSOEmbedData(parsedURL, maxWidth, maxHeight)
 		renderResponse(c, respFormat, respData, err)
 		return
 	}
@@ -170,7 +170,7 @@ func getImageOEmbedData(pid string, unitID string, page int, maxWidth int, maxHe
 	return respData, nil
 }
 
-func getWSLSOEmbedData(tgtURL *url.URL, wslsData *wslsMetadata, maxWidth int, maxHeight int) (oembed, error) {
+func getWSLSOEmbedData(tgtURL *url.URL, maxWidth int, maxHeight int) (oembed, error) {
 	respData := oembed{Version: "1.0", Type: "rich", Provider: "UVA Library", ProviderURL: "http://www.library.virginia.edu/"}
 	var snipData embedWSLSData
 
