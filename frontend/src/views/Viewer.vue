@@ -7,6 +7,7 @@
                <div class="advisory-dimmer"></div>
                <div class="advisory">
                   <span class="icon"></span>
+                  <h5>Content advisory</h5>
                   <p>{{  curio.advisory }}</p>
                   <button @click="curio.clearAdvisory()">Show content</button>
                </div>
@@ -205,6 +206,25 @@ const downloadImage = (() => {
 </script>
 
 <style lang="scss">
+@media only screen and (min-width: 768px) {
+   .advisory-dimmer {
+      opacity: 0.9;
+   }
+   .advisory {
+      max-width: 390px;
+      max-height: 340px;
+      border: 1px solid #F3EC45;
+      padding: 25px;
+   }
+}
+@media only screen and (max-width: 768px) {
+   .advisory-dimmer {
+      opacity: 1;
+   }
+   .advisory {
+      width: 90%;
+   }
+}
 h3 {
    text-align: left;
 }
@@ -241,7 +261,6 @@ div.tify-info-section.-logo {
       height: 100%;
       background-color: #2b2b2b;
       z-index: 9999;
-      opacity: 0.9;
    }
    .advisory {
       position: absolute;
@@ -249,12 +268,8 @@ div.tify-info-section.-logo {
       transform: translate(-50%,-50%);
       opacity: 1;
       background: #2b2b2b;
-      max-width: 390px;
-      max-height: 340px;
       border-radius: 10px;
-      border: 1px solid #F3EC45;
       z-index: 100000;
-      padding: 25px;
       .icon {
          display: block;
          width: 60px;
@@ -264,7 +279,21 @@ div.tify-info-section.-logo {
          background-position: center center;
          margin: 10px auto 20px auto;
       }
+      h5 {
+         font-family: "franklin-gothic-urw-medium", arial, sans-serif;
+         -webkit-font-smoothing: antialiased;
+         -moz-osx-font-smoothing: grayscale;
+         font-size: 20px;
+         margin: 17px 0;
+         padding: 0;
+         color: white;
+      }
       p {
+         font-family: "franklin-gothic-urw-medium", arial, sans-serif;
+         padding: 0;
+         font-size: 17px;
+         padding: 0;
+         margin: 0 0 17px 0;
          color: white;
       }
       button {
@@ -277,7 +306,6 @@ div.tify-info-section.-logo {
          &:hover {
             background-color: #91d8f2;
          }
-         // background color: blue-alt-lightest; #BFE7FiCstroke-color:
       }
    }
 }
