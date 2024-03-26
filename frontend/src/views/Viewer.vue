@@ -302,6 +302,8 @@ div.tify-info-section.-logo {
          background-color: #BFE7F7;
          border: 2px solid #007bac;
          padding: 0.5rem 1rem;
+         font-size: 17px;
+         font-family: "franklin-gothic-urw-medium", arial, sans-serif;
          cursor: pointer ;
          &:hover {
             background-color: #91d8f2;
