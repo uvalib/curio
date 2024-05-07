@@ -1,4 +1,5 @@
 <template>
+   <Toast position="top-center" />
    <div class="viewer">
       <WaitSpinner v-if="curio.working" :overlay="true" message="Loading viewer..." />
       <template v-else>
@@ -12,8 +13,11 @@
                   <button @click="curio.clearAdvisory()">Show content</button>
                </div>
             </template>
-            <div class="extra-tools" @click="downloadImage"  v-if="curio.viewType=='iiif'">
+            <div class="extra-tools" @click="downloadImage">
                <i class="fas fa-download"></i>
+            </div>
+            <div class="iiif">
+               <img src="/iiif.svg" @click="iiifManifestClicked()"/>
             </div>
             <div id="tify-viewer" style="height:100%;"></div>
          </template>
@@ -63,10 +67,14 @@ import { useCurioStore } from "@/stores/curio"
 import { onMounted, ref, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import  TreeViewer  from "@/components/TreeViewer.vue"
+import { copyText } from 'vue3-clipboard'
+import { useToast } from "primevue/usetoast"
+import Toast from 'primevue/toast'
 
 import 'tify'
 import 'tify/dist/tify.css'
 
+const toast = useToast()
 const curio = useCurioStore()
 const route = useRoute()
 const router = useRouter()
@@ -147,6 +155,16 @@ const dimensionsMessage = (() =>{
       }
    }
    window.top.postMessage(message, tgtDomain.value)
+})
+
+const iiifManifestClicked = (() => {
+   copyText(curio.iiifURL, undefined, (error, _event) => {
+      if (error) {
+         toast.add({severity:'error', summary:  "Copy Error", detail: `Unable to copy IIIF URL to clipboard.\n\nYou can manually copy it here:\n\n${curio.iiifURL}`})
+      } else {
+         toast.add({severity:'success', summary:  "Copied", detail:  "IIIF URL copied to clipboard.", life: 5000})
+      }
+   })
 })
 
 const changeParam = (() => {
@@ -311,19 +329,37 @@ div.tify-info-section.-logo {
       }
    }
 }
+.iiif {
+   z-index: 1000;
+   position: absolute;
+   left: 5px;
+   top: 280px;
+   padding: 4px;
+   img {
+      padding: 4px;
+      height: 32px;
+      &:hover {
+         -webkit-backdrop-filter: blur(2px);
+         backdrop-filter: blur(2px);
+         background: rgba(0, 0, 0, .2);
+      }
+   }
+}
 .extra-tools {
-   padding: 8px;
    z-index: 1000;
    position: absolute;
    left: 7px;
    top: 240px;
-   font-size: 1.25em;
-   color: white;
-   cursor: pointer;
-   &:hover {
-      -webkit-backdrop-filter: blur(2px);
-      backdrop-filter: blur(2px);
-      background: rgba(0, 0, 0, .2);
+   i {
+      padding: 8px;
+      font-size: 1.25em;
+      color: white;
+      cursor: pointer;
+      &:hover {
+         -webkit-backdrop-filter: blur(2px);
+         backdrop-filter: blur(2px);
+         background: rgba(0, 0, 0, .2);
+      }
    }
 }
 .-controls {
