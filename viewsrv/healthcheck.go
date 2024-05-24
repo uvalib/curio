@@ -37,11 +37,11 @@ func healthCheckHandler(c *gin.Context) {
 	}
 
 	httpStatus := http.StatusOK
-//	if tsStatus.Healthy == false || iiifStatus.Healthy == false {
+	//	if tsStatus.Healthy == false || iiifStatus.Healthy == false {
 	if iiifStatus.Healthy == false {
 		httpStatus = http.StatusInternalServerError
 	}
 
-//	c.JSON(httpStatus, gin.H{"tracksys": tsStatus, "iiifmanifest": iiifStatus})
+	//	c.JSON(httpStatus, gin.H{"tracksys": tsStatus, "iiifmanifest": iiifStatus})
 	c.JSON(httpStatus, gin.H{"iiifmanifest": iiifStatus})
 }

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/uvalib/uva-aws-s3-sdk/uva-s3"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"time"
-	"github.com/uvalib/uva-aws-s3-sdk/uva-s3"
 )
 
 // This is a minimal mapping of the apollo items API request to the
@@ -125,7 +125,6 @@ func httpClientWithTimeouts(connTimeout int, readTimeout int) *http.Client {
 	return client
 }
 
-
 // curio s3 session
 var s3Svc uva_s3.UvaS3
 
@@ -140,7 +139,7 @@ func initS3() {
 
 func getS3Response(bucket string, key string) ([]byte, error) {
 
-	input := uva_s3.NewUvaS3Object( bucket, key )
+	input := uva_s3.NewUvaS3Object(bucket, key)
 	buffer, err := s3Svc.GetToBuffer(input)
 
 	if err != nil {
