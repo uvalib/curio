@@ -335,6 +335,7 @@ div.tify-info-section.-logo {
    left: 5px;
    top: 280px;
    padding: 4px;
+   cursor: pointer;
    img {
       padding: 4px;
       height: 32px;
