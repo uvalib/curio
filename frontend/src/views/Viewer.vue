@@ -225,9 +225,6 @@ const downloadImage = (() => {
 
 <style lang="scss">
 @media only screen and (min-width: 768px) {
-   .advisory-dimmer {
-      opacity: 0.9;
-   }
    .advisory {
       max-width: 390px;
       max-height: 340px;
@@ -236,9 +233,6 @@ const downloadImage = (() => {
    }
 }
 @media only screen and (max-width: 768px) {
-   .advisory-dimmer {
-      opacity: 1;
-   }
    .advisory {
       width: 90%;
    }
@@ -277,8 +271,10 @@ div.tify-info-section.-logo {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: #2b2b2b;
+      background-color: rgba(10,10,10,0.9);
       z-index: 9999;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
    }
    .advisory {
       position: absolute;
