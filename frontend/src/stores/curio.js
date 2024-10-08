@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import { useFetch } from '@vueuse/core'
 
 export const useCurioStore = defineStore('curio', {
 	state: () => ({
@@ -54,28 +54,26 @@ export const useCurioStore = defineStore('curio', {
          if (unit ) {
             url += `&unit=${unit}`
          }
-         await axios.get(url).then( async response => {
-            if (response.data.type == "iiif") {
-               let manUrl = response.data.data.iiif
-               let manResp = await axios.get(manUrl)
-               let respMeta = manResp.data.metadata
-               if ( respMeta ) {
-                  respMeta.forEach( m => {
+         const { error, data } = await useFetch(url)
+         if ( error.value ) {
+            this.failed = true
+            this.working = false
+         } else {
+            const resp = JSON.parse(data.value)
+            if (resp.type == "iiif") {
+               const { data } = await useFetch( resp.data.iiif)
+               const iiifResp = JSON.parse(data.value)
+               if ( iiifResp && iiifResp.metadata ) {
+                  iiifResp.metadata.forEach( m => {
                      if (m.label == 'Content Advisory') {
                         this.advisory = m.value
                      }
                   })
                }
-               this.setViewData(response.data)
-               this.working = false
-            } else {
-               this.setViewData(response.data)
-               this.working = false
             }
-         }).catch( () => {
-            this.failed = true
+            this.setViewData(resp)
             this.working = false
-         })
+         }
       }
    },
 })
