@@ -16,7 +16,7 @@
             <div class="extra-tools" @click="downloadImage">
                <i class="pi pi-download"></i>
             </div>
-            <div class="iiif">
+            <div class="iiif" v-if="canClipboard">
                <img src="/iiif.svg" @click="iiifManifestClicked()"/>
             </div>
             <div id="tify-viewer" style="height:100%;"></div>
@@ -67,12 +67,15 @@ import { useCurioStore } from "@/stores/curio"
 import { onMounted, ref, onBeforeUnmount } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import  TreeViewer  from "@/components/TreeViewer.vue"
-import { copyText } from 'vue3-clipboard'
+import { useClipboard, usePermission, useTimeoutPoll } from '@vueuse/core'
 import { useToast } from "primevue/usetoast"
 import Toast from 'primevue/toast'
 
 import 'tify'
 import 'tify/dist/tify.css'
+
+const canClipboard = usePermission('clipboard-write')
+const { copy, copied } = useClipboard()
 
 const toast = useToast()
 const curio = useCurioStore()
@@ -80,7 +83,6 @@ const route = useRoute()
 const router = useRouter()
 
 const tgtDomain = ref("")
-const intervalID = ref(-1)
 const viewer = ref(null)
 
 onMounted( async () => {
@@ -129,7 +131,7 @@ onMounted( async () => {
          },
       })
       viewer.value.mount('#tify-viewer')
-      intervalID.value = setInterval( changeParam, 1000)
+      useTimeoutPoll( changeParam, 1000, { immediate: true } )
    }
 
    if ( tgtDomain.value) {
@@ -138,10 +140,6 @@ onMounted( async () => {
 })
 
 onBeforeUnmount(()=>{
-   if ( intervalID.value > -1) {
-      clearInterval(intervalID.value)
-      intervalID.value = -1
-   }
    if ( viewer.value ) {
       viewer.value.destroy()
    }
@@ -158,13 +156,10 @@ const dimensionsMessage = (() =>{
 })
 
 const iiifManifestClicked = (() => {
-   copyText(curio.iiifURL, undefined, (error, _event) => {
-      if (error) {
-         toast.add({severity:'error', summary:  "Copy Error", detail: `Unable to copy IIIF URL to clipboard.\n\nYou can manually copy it here:\n\n${curio.iiifURL}`})
-      } else {
-         toast.add({severity:'success', summary:  "Copied", detail:  "IIIF URL copied to clipboard.", life: 5000})
-      }
-   })
+   copy(curio.iiifURL)
+   if (copied) {
+      toast.add({severity:'success', summary:  "Copied", detail:  "IIIF URL copied to clipboard.", life: 5000})
+   }
 })
 
 const changeParam = (() => {
