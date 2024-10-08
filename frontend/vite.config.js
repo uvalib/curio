@@ -41,13 +41,13 @@ export default defineConfig({
           },
       }
    },
-   //  configureWebpack: {
-   //    performance: {
-   //      // bump max sizes to 1024
-   //      maxEntrypointSize: 1024000,
-   //      maxAssetSize: 1024000
-   //    }
-   //  },
+   css: {
+      preprocessorOptions : {
+          scss: {
+              api: "modern-compiler",
+          },
+      }
+  },
 })
 
 

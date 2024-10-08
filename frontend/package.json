@@ -1,31 +1,26 @@
 {
   "name": "viewer",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview --port 5050",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+    "build": "vite build"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^5.15.3",
-    "@primevue/themes": "^4.0.0",
-    "@vue/compat": "^3.1.0",
-    "axios": "^1.7.2",
-    "pinia": "^2.0.13",
-    "primeicons": "^6.0.1",
-    "primevue": "^4.0.0",
-    "tify": "^0.28.1",
-    "video.js": "^7.11.8",
-    "vue": "^3.1.0",
-    "vue-router": "^4.0.0",
+    "@primevue/themes": "^4.1.0",
+    "axios": "^1.7.7",
+    "pinia": "^2.2.4",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.1.0",
+    "tify": "^0.31.0",
+    "video.js": "^8.18.1",
+    "vue": "^3.5.11",
+    "vue-router": "^4.4.5",
     "vue3-clipboard": "^1.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^2.2.2",
-    "eslint": "^8.5.0",
-    "eslint-plugin-vue": "^8.2.0",
-    "sass": "^1.49.9",
-    "vite": "^2.8.4"
+    "@vitejs/plugin-vue": "^5.1.4",
+    "sass-embedded": "^1.79.4",
+    "vite": "^5.4.8"
   }
 }

@@ -14,7 +14,7 @@
                </div>
             </template>
             <div class="extra-tools" @click="downloadImage">
-               <i class="fas fa-download"></i>
+               <i class="pi pi-download"></i>
             </div>
             <div class="iiif">
                <img src="/iiif.svg" @click="iiifManifestClicked()"/>
@@ -196,7 +196,7 @@ const changeParam = (() => {
       if ( tgtDomain.value ) {
          let evt = {name: "curio"}
          if ( q.x ) evt.x = q.x
-         if (q.y ) evt.y = q.y
+         if ( q.y ) evt.y = q.y
          if ( q.zoom ) evt.zoom = q.zoom
          if ( q.rotation ) evt.rotation = q.rotation
          if ( q.page ) evt.page = q.page

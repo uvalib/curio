@@ -11,11 +11,9 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import ToastService from 'primevue/toastservice'
 import WaitSpinner from "@/components/WaitSpinner.vue"
+import 'primeicons/primeicons.css'
 
-const pinia = createPinia()
 const app = createApp(App)
-
-app.use(pinia)
 app.use(router)
 
 app.use(PrimeVue, {
@@ -36,8 +34,6 @@ app.component('Image',  Image)
 app.component('InputText', InputText)
 app.component('Button', Button)
 
-
-import '@fortawesome/fontawesome-free/css/all.css'
-import 'primeicons/primeicons.css'
+app.use(createPinia())
 
 app.mount('#app')
