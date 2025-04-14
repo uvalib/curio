@@ -13,11 +13,13 @@
                   <button @click="curio.clearAdvisory()">Show content</button>
                </div>
             </template>
-            <div class="extra-tools" @click="downloadImage">
-               <i class="pi pi-download"></i>
-            </div>
-            <div class="iiif" v-if="canClipboard">
-               <img src="/iiif.svg" @click="iiifManifestClicked()"/>
+            <div class="extra-tools hidden" @click="downloadImage">
+               <div tabindex="0" class="download" @click="downloadImage">
+                  <i class="pi pi-download"></i>
+               </div>
+               <div tabindex="0" class="iiif" v-if="canClipboard">
+                  <img src="/iiif.svg" @click="iiifManifestClicked()"/>
+               </div>
             </div>
             <div id="tify-viewer" style="height:100%;"></div>
          </template>
@@ -132,6 +134,12 @@ onMounted( async () => {
       })
       viewer.value.mount('#tify-viewer')
       useTimeoutPoll( changeParam, 1000, { immediate: true } )
+      setTimeout( ()=> {
+         let extra = document.getElementsByClassName("extra-tools")[0]
+         let orig = document.getElementsByClassName("tify-scan-buttons")[0]
+         orig.appendChild(extra)
+         extra.classList.remove("hidden")
+      },500)
    }
 
    if ( tgtDomain.value) {
@@ -219,6 +227,34 @@ const downloadImage = (() => {
 </script>
 
 <style lang="scss">
+.tify-header {
+   background: var(  --uvalib-grey-lightest);
+   button.tify-header-button, button.tify-page-select-button {
+     &:focus {
+         color: var( --uvalib-text-dark );
+         outline: 2px dashed  var( --uva-blue-alt-100);
+         outline-offset: -1px;
+     }
+   }
+}
+.tify-scan {
+   background-color: var( --uvalib-grey-a);
+   button.tify-scan-page-button {
+      &:focus {
+         background-color: white;
+         outline: 2px dashed var(--uvalib-blue-alt-light);
+         outline-offset: 0.2rem;
+     }
+   }
+   button.tify-scan-button {
+      border-radius: 50px;
+      &:focus {
+         background-color: black;
+         outline: 2px dashed  var(--uvalib-blue-alt-light);
+         outline-offset: 0px;
+     }
+   }
+}
 @media only screen and (min-width: 768px) {
    .advisory {
       max-width: 390px;
@@ -320,37 +356,48 @@ div.tify-info-section.-logo {
       }
    }
 }
-.iiif {
-   z-index: 1000;
-   position: absolute;
-   left: 5px;
-   top: 280px;
-   padding: 4px;
-   cursor: pointer;
-   img {
-      padding: 4px;
-      height: 32px;
+
+.extra-tools.hidden {
+   display: none;
+}
+
+.extra-tools {
+   display: flex;
+   flex-direction: column;
+   align-items: flex-start;
+   justify-content: center;
+   gap: 8px;
+   i {
+      padding: 8px;
+      font-size: 1.25em;
+      color: white;
+      cursor: pointer;
+      border-radius: 50px;
       &:hover {
          -webkit-backdrop-filter: blur(2px);
          backdrop-filter: blur(2px);
          background: rgba(0, 0, 0, .2);
       }
    }
-}
-.extra-tools {
-   z-index: 1000;
-   position: absolute;
-   left: 7px;
-   top: 240px;
-   i {
-      padding: 8px;
-      font-size: 1.25em;
-      color: white;
+   .iiif {
+      padding: 3px;
+   }
+   .iiif, .download {
       cursor: pointer;
-      &:hover {
-         -webkit-backdrop-filter: blur(2px);
-         backdrop-filter: blur(2px);
-         background: rgba(0, 0, 0, .2);
+      border-radius: 50px;
+         &:focus {
+            background-color: black;
+            outline: 2px dashed  var(--uvalib-blue-alt-light);
+            outline-offset: 0px;
+      }
+      img {
+         padding: 6px 4px 0 4px;
+         width: 32px;
+         &:hover {
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, .2);
+         }
       }
    }
 }
