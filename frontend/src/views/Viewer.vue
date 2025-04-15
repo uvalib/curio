@@ -139,7 +139,7 @@ onMounted( async () => {
          let orig = document.getElementsByClassName("tify-scan-buttons")[0]
          orig.appendChild(extra)
          extra.classList.remove("hidden")
-      },500)
+      },750)
    }
 
    if ( tgtDomain.value) {
@@ -229,32 +229,39 @@ const downloadImage = (() => {
 <style lang="scss">
 .tify-header {
    background: var(  --uvalib-grey-lightest);
+   // toolbar button focs styles
    button.tify-header-button, button.tify-page-select-button {
      &:focus {
          color: var( --uvalib-text-dark );
-         outline: 2px dashed  var( --uva-blue-alt-100);
+         outline: 2px solid  var( --uvalib-brand-blue-light);
          outline-offset: -1px;
      }
    }
 }
+
+// styles for buttons inside the view
 .tify-scan {
    background-color: var( --uvalib-grey-a);
+   // pagination
    button.tify-scan-page-button {
       &:focus {
          background-color: white;
-         outline: 2px dashed var(--uvalib-blue-alt-light);
+         outline: 2px solid var(--uvalib-blue-alt-light);
          outline-offset: 0.2rem;
      }
    }
+
+   // pan, zoom, etc
    button.tify-scan-button {
       border-radius: 50px;
       &:focus {
          background-color: black;
-         outline: 2px dashed  var(--uvalib-blue-alt-light);
+         outline: 2px solid  var(--uvalib-blue-alt-light);
          outline-offset: 0px;
      }
    }
 }
+
 @media only screen and (min-width: 768px) {
    .advisory {
       max-width: 390px;
@@ -387,7 +394,7 @@ div.tify-info-section.-logo {
       border-radius: 50px;
          &:focus {
             background-color: black;
-            outline: 2px dashed  var(--uvalib-blue-alt-light);
+            outline: 2px solid  var(--uvalib-blue-alt-light);
             outline-offset: 0px;
       }
       img {
