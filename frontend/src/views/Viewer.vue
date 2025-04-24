@@ -13,13 +13,13 @@
                   <button @click="curio.clearAdvisory()">Show content</button>
                </div>
             </template>
-            <div class="extra-tools hidden" @click="downloadImage">
-               <div tabindex="0" class="download" @click="downloadImage">
-                  <i class="pi pi-download"></i>
-               </div>
-               <div tabindex="0" class="iiif" v-if="canClipboard">
-                  <img src="/iiif.svg" @click="iiifManifestClicked()"/>
-               </div>
+            <div class="extra-tools hidden">
+               <Button icon="pi pi-download" rounded text aria-label="download image" @click="downloadImage"/>
+               <Button  v-if="canClipboard" rounded text aria-label="copy iiif manifest" @click="iiifManifestClicked">
+                  <template #icon>
+                     <img src="/iiif.svg" style="width: 24px;"/>
+                  </template>
+               </Button>
             </div>
             <div id="tify-viewer" style="height:100%;"></div>
          </template>
@@ -139,7 +139,7 @@ onMounted( async () => {
          let orig = document.getElementsByClassName("tify-scan-buttons")[0]
          orig.appendChild(extra)
          extra.classList.remove("hidden")
-      },750)
+      }, 1000)
    }
 
    if ( tgtDomain.value) {
@@ -228,12 +228,12 @@ const downloadImage = (() => {
 
 <style lang="scss">
 .tify-header {
-   background: var(  --uvalib-grey-lightest);
+   background: $uva-grey-200;
    // toolbar button focs styles
    button.tify-header-button, button.tify-page-select-button {
      &:focus {
-         color: var( --uvalib-text-dark );
-         outline: 2px solid  var( --uvalib-brand-blue-light);
+         color: $uva-text-color-dark;
+         outline: 2px solid  $uva-brand-blue-100;
          outline-offset: -1px;
      }
    }
@@ -241,12 +241,12 @@ const downloadImage = (() => {
 
 // styles for buttons inside the view
 .tify-scan {
-   background-color: var( --uvalib-grey-a);
+   background-color: $uva-grey-A;
    // pagination
    button.tify-scan-page-button {
       &:focus {
          background-color: white;
-         outline: 2px solid var(--uvalib-blue-alt-light);
+         outline: 2px solid $uva-blue-alt-300;
          outline-offset: 0.2rem;
      }
    }
@@ -256,7 +256,7 @@ const downloadImage = (() => {
       border-radius: 50px;
       &:focus {
          background-color: black;
-         outline: 2px solid  var(--uvalib-blue-alt-light);
+         outline: 2px solid  $uva-blue-alt-300;
          outline-offset: 0px;
      }
    }
@@ -389,12 +389,20 @@ div.tify-info-section.-logo {
    .iiif {
       padding: 3px;
    }
+   button.p-button-icon-only {
+      .p-button-icon {
+         font-size: 1.2rem;
+      }
+      &:focus, &:focus-visible {
+         background: black;
+      }
+   }
    .iiif, .download {
       cursor: pointer;
       border-radius: 50px;
          &:focus {
             background-color: black;
-            outline: 2px solid  var(--uvalib-blue-alt-light);
+            outline: 2px solid $uva-blue-alt-300;
             outline-offset: 0px;
       }
       img {
@@ -425,7 +433,7 @@ div.tify-info-section.-logo {
    margin: 4% auto 0 auto;
    h2 {
       font-size: 1.5em;
-      color: var(--uvalib-text);
+      color: $uva-text-color-base;
    }
 }
 .wsls {
@@ -446,10 +454,11 @@ div.tify-info-section.-logo {
       margin: 5px 0 0 0;
    }
    .anchorscript-container {
-      margin: 0 auto; text-align: left; color: var(--uvalib-text);
+      margin: 0 auto; text-align: left;
+      color: $uva-text-color-base;
       h4 {
         margin: 0 0 10px 0;
-        border-bottom: 1px solid var(--uvalib-text);
+        border-bottom: 1px solid $uva-text-color-base;
         padding-bottom: 2px;
       }
       img {
@@ -461,7 +470,7 @@ div.tify-info-section.-logo {
             display: block;
             font-size: 1.1em;
             text-decoration: none;
-            color: var(--color-link);
+            color: $uva-blue-alt-A;
             &:hover {
                text-decoration: underline;
             }

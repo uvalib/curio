@@ -50,7 +50,7 @@ const basePath = computed(()=>{
 
 <style scoped lang="scss">
 div.header {
-   background-color: var(--uvalib-brand-blue);
+   background-color: $uva-brand-blue;
    color: white;
    padding: 1vw 20px;
    text-align: left;
@@ -87,7 +87,7 @@ div.site-link {
    padding: 25px;
    h2 {
       font-size: 1.15em;
-      color: var(--uvalib-text);
+      color: $uva-text-color-base;
    }
    .content {
       width: 50%;
@@ -101,7 +101,7 @@ div.site-link {
          display: block;
          font-size: 1.1em;
          text-decoration: none;
-         color: var(--color-link);
+         color: $uva-blue-alt;
          &:hover {
             text-decoration: underline;
          }

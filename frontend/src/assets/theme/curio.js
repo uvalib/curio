@@ -2,7 +2,7 @@ import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 import ripple from '@primeuix/themes/aura/ripple'
 import tooltip from '@primeuix/themes/aura/tooltip'
-import './uva-colors.css'
+import colors from './colors.module.scss'
 
 const Curio = definePreset(Aura, {
    root: {
@@ -17,22 +17,22 @@ const Curio = definePreset(Aura, {
    },
    semantic: {
       primary: {
-         50: 'var(--uvalib-brand-blue-lightest)',
-         100: 'var(--uvalib-brand-blue-lighter)',
-         200: 'var(--uvalib-brand-blue-lighter)',
-         300: 'var(--uvalib-brand-blue-lighter)',
-         400: 'var(--uvalib-brand-blue-light)',
-         500: 'var(--uvalib-brand-blue-light)',
-         600: 'var(--uvalib-brand-blue-light)',
-         700: 'var(--uvalib-brand-blue-light)',
-         800: 'var(--uvalib-brand-blue)',
-         900: 'var(--uvalib-brand-blue)',
-         950: 'var(--uvalib-brand-blue)'
+         50:  colors.brandBlue300,
+         100: colors.brandBlue300,
+         200: colors.brandBlue300,
+         300: colors.brandBlue300,
+         400: colors.brandBlue100,
+         500: colors.brandBlue100,
+         600: colors.brandBlue100,
+         700: colors.brandBlue100,
+         800: colors.brandBlue,
+         900: colors.brandBlue,
+         950: colors.brandBlue
       },
       focusRing: {
          width: '2px',
-         style: 'dotted',
-         offset: '3px'
+         style: 'solid',
+         offset: '2px',
       },
       disabledOpacity: '0.3',
       colorScheme: {
@@ -46,7 +46,7 @@ const Curio = definePreset(Aura, {
             highlight: {
                background: '#ffffff',
                focusBackground: '#ffffff',
-               color: 'var(--uvalib-text)',
+               color: colors.textBase,
                focusColor: '#ffffff'
             }
          },
@@ -57,12 +57,24 @@ const Curio = definePreset(Aura, {
          colorScheme: {
             light: {
                secondary: {
-                  background: 'var(--uvalib-grey-lightest)',
-                  hoverBackground: 'var(--uvalib-grey-light)',
-                  hoverBorderColor: 'var(--uvalib-grey)',
-                  borderColor: 'var(--uvalib-grey-light)',
-                  color: 'var(--uvalib-text)',
+                  background: colors.grey200,
+                  hoverBackground: colors.grey100,
+                  hoverBorderColor: colors.grey,
+                  borderColor: colors.grey100,
+                  color: colors.textBase,
                },
+               primary: {
+                  focusRing: {
+                     color: colors.blueAlt300,
+                  }
+               },
+               text: {
+                  primary: {
+                     color: 'white',
+                     hoverBackground: '#0003',
+                     activeBackground: '#0003'
+                  }
+               }
             }
          }
       },

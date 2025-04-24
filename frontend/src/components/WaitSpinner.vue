@@ -53,7 +53,6 @@ div.spinner {
    padding: 10px 150px 25px 150px;
    display: inline-block;
    font-weight: bold;
-   color: var(--uvalib-text);
 }
 div.spinner.embed {
    box-shadow: none;
@@ -62,7 +61,6 @@ div.spinner.embed {
    background: transparent;
 }
 div.spinner h1 {
-   color: var(--uvalib-text);
    border: none;
 }
 .spinner-animation {
@@ -70,7 +68,7 @@ div.spinner h1 {
    width: 80px;
    text-align: center;
    .dot  {
-      background: var(--uvalib-brand-orange);
+      background: $uva-brand-orange;
    }
 }
 .spinner-animation > div {
