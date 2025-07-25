@@ -21,7 +21,8 @@
                   </template>
                </Button>
             </div>
-            <div id="tify-viewer" style="height:100%;"></div>
+            <div v-if="curio.hasAdvisory" id="tify-viewer" style="height:100%;" inert></div>
+            <div v-else id="tify-viewer" style="height:100%;"></div>
          </template>
          <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
