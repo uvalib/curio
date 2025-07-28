@@ -17,7 +17,7 @@
                <Button icon="pi pi-download" rounded text aria-label="download image" @click="downloadImage"/>
                <Button  v-if="canClipboard" rounded text aria-label="copy iiif manifest" @click="iiifManifestClicked">
                   <template #icon>
-                     <img src="/iiif.svg" style="width: 24px;"/>
+                     <img src="/iiif.svg" style="width: 24px;" role="none"/>
                   </template>
                </Button>
             </div>
