@@ -10,7 +10,7 @@
                   <span class="icon"></span>
                   <h5>Content advisory</h5>
                   <p>{{  curio.advisory }}</p>
-                  <button @click="curio.clearAdvisory()">Show content</button>
+                  <button @click="clearAdvisorClicked()">Show content</button>
                </div>
             </template>
             <div class="extra-tools hidden">
@@ -21,8 +21,7 @@
                   </template>
                </Button>
             </div>
-            <div v-if="curio.hasAdvisory" id="tify-viewer" style="height:100%;" inert></div>
-            <div v-else id="tify-viewer" style="height:100%;"></div>
+            <div id="tify-viewer" style="height:100%;"></div>
          </template>
          <div v-else-if="curio.viewType=='wsls'" class="wsls">
             <div class="overview">
@@ -88,6 +87,12 @@ const router = useRouter()
 const tgtDomain = ref("")
 const viewer = ref(null)
 
+const clearAdvisorClicked = (() => {
+   curio.clearAdvisory()
+   var tiffyDiv = document.getElementById("tify-viewer")
+   tiffyDiv.removeAttribute("inert")
+})
+
 onMounted( async () => {
    let pid = route.params.pid
    let page = route.query.page
@@ -102,6 +107,11 @@ onMounted( async () => {
    tgtDomain.value = route.query.domain
 
    if ( curio.viewType == 'iiif' ) {
+      if (curio.hasAdvisory) {
+         var tiffyDiv = document.getElementById("tify-viewer")
+         tiffyDiv.setAttribute("inert", true)
+      }
+
       let pages = null
       let zoom = null
       let rotation = null
