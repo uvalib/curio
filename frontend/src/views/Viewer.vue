@@ -14,8 +14,8 @@
                </div>
             </template>
             <div class="extra-tools hidden">
-               <Button icon="pi pi-download" rounded text aria-label="download image" @click="downloadImage"/>
-               <Button  v-if="canClipboard" rounded text aria-label="copy iiif manifest" @click="iiifManifestClicked">
+               <Button icon="pi pi-download" severity="contrast" aria-label="download image" @click="downloadImage"/>
+               <Button  v-if="canClipboard" icon="/iiif.svg" severity="contrast" aria-label="copy iiif manifest" @click="iiifManifestClicked">
                   <template #icon>
                      <img src="/iiif.svg" style="width: 24px;" role="none"/>
                   </template>
@@ -139,15 +139,13 @@ onMounted( async () => {
          zoom: zoom,
          pan: pan,
          rotation: rotation,
-         viewer: {
-            immediateRender: false,
-         },
+         colorMode: 'dark',
       })
       viewer.value.mount('#tify-viewer')
       useTimeoutPoll( changeParam, 1000, { immediate: true } )
       setTimeout( ()=> {
          let extra = document.getElementsByClassName("extra-tools")[0]
-         let orig = document.getElementsByClassName("tify-scan-buttons")[0]
+         let orig = document.getElementsByClassName("tify-media-buttons -controls")[0]
          orig.appendChild(extra)
          extra.classList.remove("hidden")
       }, 1000)
@@ -238,40 +236,6 @@ const downloadImage = (() => {
 </script>
 
 <style lang="scss">
-.tify-header {
-   background: $uva-grey-200;
-   // toolbar button focs styles
-   button.tify-header-button, button.tify-page-select-button {
-     &:focus {
-         color: $uva-text-color-dark;
-         outline: 2px solid  $uva-brand-blue-100;
-         outline-offset: -1px;
-     }
-   }
-}
-
-// styles for buttons inside the view
-.tify-scan {
-   background-color: $uva-grey-A;
-   // pagination
-   button.tify-scan-page-button {
-      &:focus {
-         background-color: white;
-         outline: 2px solid $uva-blue-alt-300;
-         outline-offset: 0.2rem;
-     }
-   }
-
-   // pan, zoom, etc
-   button.tify-scan-button {
-      border-radius: 50px;
-      &:focus {
-         background-color: black;
-         outline: 2px solid  $uva-blue-alt-300;
-         outline-offset: 0px;
-     }
-   }
-}
 
 @media only screen and (min-width: 768px) {
    .advisory {
@@ -286,31 +250,7 @@ const downloadImage = (() => {
       width: 90%;
    }
 }
-h3 {
-   text-align: left;
-}
-.tify-info-section.-title {
-   text-align: left;
-}
-div.tify-info-metadata {
-   text-align: left;
-   h4 {
-      font-weight: bold;
-      margin-bottom: 5px;
-      font-size: 0.95em;
-   }
-   .tify-info-content {
-      margin-left: 15px;
-      font-size: 0.95em;
-   }
-}
-div.tify-info-section.-logo {
-   border-top: 1px solid #dedede;
-   padding-top:15px;
-   img {
-      margin: 0 auto;
-   }
-}
+
 .viewer {
    height: 100%;
    position: relative;
@@ -384,47 +324,12 @@ div.tify-info-section.-logo {
    flex-direction: column;
    align-items: flex-start;
    justify-content: center;
-   gap: 8px;
-   i {
-      padding: 8px;
-      font-size: 1.25em;
-      color: white;
-      cursor: pointer;
-      border-radius: 50px;
-      &:hover {
-         -webkit-backdrop-filter: blur(2px);
-         backdrop-filter: blur(2px);
-         background: rgba(0, 0, 0, .2);
-      }
-   }
-   .iiif {
-      padding: 3px;
-   }
-   button.p-button-icon-only {
-      .p-button-icon {
-         font-size: 1.2rem;
-      }
-      &:focus, &:focus-visible {
-         background: black;
-      }
-   }
-   .iiif, .download {
-      cursor: pointer;
-      border-radius: 50px;
-         &:focus {
-            background-color: black;
-            outline: 2px solid $uva-blue-alt-300;
-            outline-offset: 0px;
-      }
-      img {
-         padding: 6px 4px 0 4px;
-         width: 32px;
-         &:hover {
-            -webkit-backdrop-filter: blur(2px);
-            backdrop-filter: blur(2px);
-            background: rgba(0, 0, 0, .2);
-         }
-      }
+   margin-top: 10px;
+   gap: 10px;
+   button {
+      background-color: oklch(0.19107 0.00776257 252.618 / 0.382);
+      border-color: #535558;
+      border-radius: 0;
    }
 }
 .-controls {
@@ -436,6 +341,9 @@ div.tify-info-section.-logo {
          display: none !important;
       }
    }
+}
+button.tify-dropdown-button {
+   width: 100%;
 }
 
 .not-found {

@@ -56,17 +56,25 @@ const Curio = definePreset(Aura, {
       button: {
          colorScheme: {
             light: {
-               secondary: {
-                  background: colors.grey200,
-                  hoverBackground: colors.grey100,
-                  hoverBorderColor: colors.grey,
-                  borderColor: colors.grey100,
-                  color: colors.textBase,
-               },
-               primary: {
-                  focusRing: {
-                     color: colors.blueAlt300,
-                  }
+               root: {
+                  secondary: {
+                     background: colors.grey200,
+                     hoverBackground: colors.grey100,
+                     hoverBorderColor: colors.grey,
+                     borderColor: colors.grey100,
+                     color: colors.textBase,
+                  },
+                  contrast:  {
+                     focusRing: {
+                        color: '#99c8ff',
+                        shadow: 'none'
+                     }
+                  },
+                  primary: {
+                     focusRing: {
+                        color: colors.blueAlt300,
+                     }
+                  },
                },
                text: {
                   primary: {
